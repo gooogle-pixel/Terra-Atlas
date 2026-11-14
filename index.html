@@ -102,7 +102,7 @@
 
     <main class="home-center">
       <div class="title-block">
-        <p class="mono-coord">PROJ: NATURAL EARTH I &nbsp;—&nbsp; 0.0000° N, 0.0000° E</p>
+        <p class="mono-coord">PROJ: EQUIRECTANGULAR FLAT PLANE &nbsp;—&nbsp; 0.0000° N, 0.0000° E</p>
         <h1 class="hero-title">WORLD ATLAS</h1>
       </div>
 
@@ -126,8 +126,8 @@
     </main>
 
     <footer class="home-bar bottom">
-      <span class="mono-tag">SCALE 1:50,000,000</span>
-      <span class="mono-tag">VECTOR GEOMETRY</span>
+      <span class="mono-tag">FLAT PLANE PROJECTION // ZERO EDGE DISTORTION</span>
+      <span class="mono-tag">ISLAND BEACONS ENABLED</span>
     </footer>
   </section>
 
@@ -147,7 +147,7 @@
       <div class="mode-selector-bar">
         <div class="mode-selector-label">
           <span class="mono-tag">SELECT GAMEPLAY MECHANIC</span>
-          <p id="mode-description-text">Click the prompted country directly on the interactive map.</p>
+          <p id="mode-description-text">Click the prompted country directly on the interactive flat map.</p>
         </div>
         <div class="mode-toggle-group">
           <button class="mode-btn active" id="btn-mode-locate" data-mode="locate">
@@ -162,14 +162,22 @@
       <div class="catalog-section">
         <div class="section-meta">
           <span class="mono-tag">GROUP 01 // CONTINENTS</span>
-          <h2 class="section-heading">CONTINENTAL REGIONS</h2>
+          <h2 class="section-heading">CONTINENTAL MACRO-REGIONS</h2>
         </div>
         <div class="quiz-grid" id="continent-quiz-grid"></div>
       </div>
 
       <div class="catalog-section">
         <div class="section-meta">
-          <span class="mono-tag">GROUP 02 // GEOPOLITICAL BLOCKS & UNIONS</span>
+          <span class="mono-tag">GROUP 02 // GEOGRAPHICAL SUBREGIONS</span>
+          <h2 class="section-heading">REGIONAL & CULTURAL ZONES</h2>
+        </div>
+        <div class="quiz-grid" id="subregion-quiz-grid"></div>
+      </div>
+
+      <div class="catalog-section">
+        <div class="section-meta">
+          <span class="mono-tag">GROUP 03 // GEOPOLITICAL BLOCKS & UNIONS</span>
           <h2 class="section-heading">INTERNATIONAL ORGANISATIONS</h2>
         </div>
         <div class="quiz-grid" id="org-quiz-grid"></div>
@@ -177,7 +185,7 @@
 
       <div class="catalog-section">
         <div class="section-meta">
-          <span class="mono-tag">GROUP 03 // GLOBAL</span>
+          <span class="mono-tag">GROUP 04 // GLOBAL</span>
           <h2 class="section-heading">COMPLETE WORLD</h2>
         </div>
         <div class="quiz-grid" id="world-quiz-grid"></div>
@@ -206,7 +214,7 @@
 
       <div class="hud-right">
         <select id="continent-filter" class="hud-select">
-          <option value="all">All Regions</option>
+          <option value="all">All World (195 States)</option>
           <optgroup label="Continents">
             <option value="europe">Europe</option>
             <option value="asia">Asia</option>
@@ -215,22 +223,41 @@
             <option value="south_america">South America</option>
             <option value="oceania">Oceania</option>
           </optgroup>
-          <optgroup label="Organisations">
+          <optgroup label="Geographical Subregions">
+            <option value="sub:caribbean">Caribbean Islands</option>
+            <option value="sub:central_america">Central America</option>
+            <option value="sub:middle_east">Middle East & Gulf</option>
+            <option value="sub:balkans">Balkans (SE Europe)</option>
+            <option value="sub:nordic_baltic">Nordic & Baltic States</option>
+            <option value="sub:western_europe">Western & Central Europe</option>
+            <option value="sub:central_asia">Central Asia (-stans)</option>
+            <option value="sub:south_asia">South Asia</option>
+            <option value="sub:southeast_asia">Southeast Asia</option>
+            <option value="sub:east_asia">East Asia</option>
+            <option value="sub:north_africa">North Africa & Maghreb</option>
+            <option value="sub:west_africa">West Africa</option>
+            <option value="sub:east_africa">East Africa & Horn</option>
+            <option value="sub:southern_africa">Central & Southern Africa</option>
+            <option value="sub:andean">Andean South America</option>
+            <option value="sub:pacific_islands">Pacific Island Nations</option>
+          </optgroup>
+          <optgroup label="International Organisations">
             <option value="org:eu">European Union (EU)</option>
-            <option value="org:brics">BRICS</option>
+            <option value="org:brics">BRICS+</option>
             <option value="org:asean">ASEAN</option>
             <option value="org:nato">NATO</option>
             <option value="org:g7">G7</option>
             <option value="org:g20">G20</option>
             <option value="org:au">African Union (AU)</option>
             <option value="org:saarc">SAARC</option>
-            <option value="org:gcc">GCC</option>
+            <option value="org:gcc">Gulf Cooperation Council (GCC)</option>
             <option value="org:mercosur">MERCOSUR</option>
           </optgroup>
         </select>
 
         <button class="hud-btn active" id="btn-toggle-names">Names</button>
         <button class="hud-btn" id="btn-toggle-capitals">Capitals</button>
+        <button class="hud-btn active" id="btn-toggle-islands" title="Highlight small islands and microstates">Islands</button>
         <button class="hud-btn" id="btn-atlas-settings">⚙ Palette</button>
         <button class="hud-btn primary-accent" id="btn-atlas-to-quiz">Quizzes ↗</button>
       </div>
@@ -324,8 +351,9 @@
         </div>
 
         <div class="info-item">
-          <span class="info-label">CONTINENT</span>
+          <span class="info-label">CONTINENT & SUBREGION</span>
           <span class="info-value" id="info-continent">—</span>
+          <span class="info-sub" id="info-subregion">—</span>
         </div>
 
         <div class="info-item">
