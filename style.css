@@ -6,17 +6,18 @@ body[data-theme="swiss"] {
   --ink: #111315;
   --ink-muted: #71767a;
   --hairline: #d8d6d0;
-  --ocean-bg: #e4e7ea;
-  --sphere-fill: #dde6ec;
-  --sphere-stroke: #cbd5e1;
+  --ocean-bg: #dde5eb;
+  --plane-fill: #e3ebf0;
+  --graticule-stroke: rgba(15, 23, 42, 0.06);
   --border-stroke: #f8fafc;
-  --country-dim: #e2e8f0;
-  --country-hover: #52525b;
+  --country-dim: #d8e0e6;
+  --country-hover: #475569;
   --country-selected: #2563eb;
   --label-fill: #18181b;
   --label-halo: #f8fafc;
   --cap-dot: #0f172a;
   --cap-stroke: #ffffff;
+  --beacon-ring: rgba(17, 19, 21, 0.35);
 }
 
 body[data-theme="obsidian"] {
@@ -26,16 +27,17 @@ body[data-theme="obsidian"] {
   --ink-muted: #94a3b8;
   --hairline: #263142;
   --ocean-bg: #070a10;
-  --sphere-fill: #0f172a;
-  --sphere-stroke: #1e293b;
-  --border-stroke: #0f172a;
-  --country-dim: #161f30;
+  --plane-fill: #0d131f;
+  --graticule-stroke: rgba(148, 163, 184, 0.07);
+  --border-stroke: #0b0f17;
+  --country-dim: #141c2b;
   --country-hover: #64748b;
   --country-selected: #3b82f6;
   --label-fill: #f8fafc;
   --label-halo: #0b0f17;
   --cap-dot: #38bdf8;
   --cap-stroke: #0b0f17;
+  --beacon-ring: rgba(248, 250, 252, 0.45);
 }
 
 body[data-theme="blueprint"] {
@@ -44,17 +46,18 @@ body[data-theme="blueprint"] {
   --ink: #0f2942;
   --ink-muted: #527391;
   --hairline: #c4d7e6;
-  --ocean-bg: #d4e3ef;
-  --sphere-fill: #c7d9e8;
-  --sphere-stroke: #9bb8cf;
+  --ocean-bg: #c9dceb;
+  --plane-fill: #d3e4f2;
+  --graticule-stroke: rgba(15, 41, 66, 0.08);
   --border-stroke: #eef4f8;
-  --country-dim: #d5e2ec;
+  --country-dim: #c6d8e6;
   --country-hover: #2b547e;
   --country-selected: #0284c7;
   --label-fill: #0f2942;
   --label-halo: #eef4f8;
   --cap-dot: #0f2942;
   --cap-stroke: #ffffff;
+  --beacon-ring: rgba(15, 41, 66, 0.4);
 }
 
 body[data-theme="parchment"] {
@@ -63,17 +66,18 @@ body[data-theme="parchment"] {
   --ink: #2c251d;
   --ink-muted: #786d5f;
   --hairline: #d4cbbd;
-  --ocean-bg: #e2dacb;
-  --sphere-fill: #dbd2c2;
-  --sphere-stroke: #c4b9a5;
+  --ocean-bg: #dcd3c2;
+  --plane-fill: #e3dbcc;
+  --graticule-stroke: rgba(44, 37, 29, 0.07);
   --border-stroke: #f5f2eb;
-  --country-dim: #e0d8c8;
+  --country-dim: #d8cfc0;
   --country-hover: #5c4f40;
   --country-selected: #b45309;
   --label-fill: #2c251d;
   --label-halo: #f5f2eb;
   --cap-dot: #2c251d;
   --cap-stroke: #f5f2eb;
+  --beacon-ring: rgba(44, 37, 29, 0.4);
 }
 
 :root {
@@ -392,7 +396,7 @@ body, html {
 
 .quiz-tile-title {
   font-family: var(--font-display);
-  font-size: 21px;
+  font-size: 20px;
   font-weight: 700;
   margin-top: 12px;
   line-height: 1.15;
@@ -484,7 +488,7 @@ body, html {
 
 .search-wrapper {
   position: relative;
-  width: 230px;
+  width: 220px;
 }
 
 #country-search {
@@ -716,7 +720,7 @@ body, html {
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
 }
 
-/* ================= HIGH-PERFORMANCE GPU MAP STYLING ================= */
+/* ================= FLAT PLANE MAP & ISLAND BEACONS ================= */
 #map-container {
   width: 100%;
   height: 100%;
@@ -728,7 +732,6 @@ body, html {
   width: 100%;
   height: 100%;
   cursor: grab;
-  /* CSS variables updated on zoom so DOM elements never need recreation */
   --inv-scale: 1;
   --inv-sqrt-scale: 1;
 }
@@ -737,10 +740,17 @@ body, html {
   cursor: grabbing;
 }
 
-.ocean-sphere {
-  fill: var(--sphere-fill);
-  stroke: var(--sphere-stroke);
+.plane-backdrop {
+  fill: var(--plane-fill);
+  stroke: var(--hairline);
+  stroke-width: calc(1px * var(--inv-scale));
+}
+
+.map-graticule {
+  fill: none;
+  stroke: var(--graticule-stroke);
   stroke-width: calc(0.6px * var(--inv-scale));
+  pointer-events: none;
 }
 
 .country-path {
@@ -749,7 +759,6 @@ body, html {
   cursor: pointer;
 }
 
-/* Disable transitions during pan/zoom for zero-lag 60fps rendering */
 #world-map:not(.is-zooming) .country-path {
   transition: fill 0.14s ease;
 }
@@ -758,15 +767,28 @@ body, html {
   fill: var(--country-hover) !important;
 }
 
-.microstate-target {
+/* Island & Microstate Beacon Group */
+.microstate-group {
   cursor: pointer;
-  r: calc(3.5px * var(--inv-scale));
-  stroke: var(--ink);
-  stroke-width: calc(0.8px * var(--inv-scale));
 }
 
-.microstate-target:hover {
+.microstate-ring {
+  r: calc(6.2px * var(--inv-scale));
+  fill: transparent;
+  stroke: var(--beacon-ring);
+  stroke-width: calc(0.9px * var(--inv-scale));
+  stroke-dasharray: calc(2px * var(--inv-scale)) calc(1.5px * var(--inv-scale));
+}
+
+.microstate-target {
+  r: calc(3.2px * var(--inv-scale));
+  stroke: var(--ink);
+  stroke-width: calc(0.85px * var(--inv-scale));
+}
+
+.microstate-group:hover .microstate-target {
   fill: var(--country-hover) !important;
+  r: calc(4.2px * var(--inv-scale));
 }
 
 .cap-dot {
@@ -798,7 +820,7 @@ body, html {
   pointer-events: none;
   font-family: var(--font-sans);
   font-weight: 600;
-  font-size: calc(8.5px * var(--inv-scale));
+  font-size: calc(8.2px * var(--inv-scale));
   fill: var(--label-fill);
   stroke: var(--label-halo);
   stroke-width: calc(2px * var(--inv-scale));
@@ -942,6 +964,13 @@ body, html {
   font-size: 14px;
   font-weight: 600;
   color: var(--ink);
+  margin-top: 2px;
+}
+
+.info-sub {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-muted);
   margin-top: 2px;
 }
 
