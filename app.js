@@ -210,7 +210,155 @@ const RAW_COUNTRY_DB = [
   ['548','VUT','vu','Vanuatu','Port Vila',['oceania'],[168.32,-17.73]],
 ];
 
-// ================= PHASE 4: INDEPENDENT INTERNATIONAL ORGANISATIONS DATABASE =================
+// ================= EDUCATIONAL GEOGRAPHICAL SUBREGIONS DATABASE =================
+const SUBREGIONS_DB = [
+  {
+    id: 'caribbean',
+    code: 'REG-01',
+    shortName: 'CARIBBEAN',
+    name: 'Caribbean Islands',
+    description: '13 sovereign island nations of the Caribbean Basin',
+    view: { center: [-68, 17.5], zoom: 5.2 },
+    members: ['ATG','BHS','BRB','CUB','DMA','DOM','GRD','HTI','JAM','KNA','LCA','VCT','TTO'],
+  },
+  {
+    id: 'middle_east',
+    code: 'REG-02',
+    shortName: 'MIDDLE EAST',
+    name: 'Middle East & Gulf',
+    description: 'Arabian Peninsula, Levant, Iran, Turkey & Egypt',
+    view: { center: [44, 27], zoom: 3.1 },
+    members: ['BHR','CYP','EGY','IRN','IRQ','ISR','JOR','KWT','LBN','OMN','PSE','QAT','SAU','SYR','TUR','ARE','YEM'],
+  },
+  {
+    id: 'balkans',
+    code: 'REG-03',
+    shortName: 'BALKANS',
+    name: 'Balkans (SE Europe)',
+    description: '11 states of the Balkan Peninsula in Southeast Europe',
+    view: { center: [21, 42.5], zoom: 5.4 },
+    members: ['ALB','BIH','BGR','HRV','GRC','MNE','MKD','ROU','SRB','SVN','TUR'],
+  },
+  {
+    id: 'nordic_baltic',
+    code: 'REG-04',
+    shortName: 'NORDIC & BALTIC',
+    name: 'Nordic & Baltic States',
+    description: 'Scandinavia, Finland, Iceland & the Baltic nations',
+    view: { center: [14, 61], zoom: 3.3 },
+    members: ['DNK','EST','FIN','ISL','LVA','LTU','NOR','SWE'],
+  },
+  {
+    id: 'central_america',
+    code: 'REG-05',
+    shortName: 'CENTRAL AMERICA',
+    name: 'Central America',
+    description: '7 nations bridging North and South America',
+    view: { center: [-85, 13], zoom: 5.2 },
+    members: ['BLZ','CRI','SLV','GTM','HND','NIC','PAN'],
+  },
+  {
+    id: 'central_asia',
+    code: 'REG-06',
+    shortName: 'CENTRAL ASIA',
+    name: 'Central Asia & Caucasus',
+    description: 'The 5 Central Asian republics & South Caucasus',
+    view: { center: [62, 43], zoom: 3.3 },
+    members: ['KAZ','KGZ','TJK','TKM','UZB','ARM','AZE','GEO'],
+  },
+  {
+    id: 'southeast_asia',
+    code: 'REG-07',
+    shortName: 'SE ASIA',
+    name: 'Southeast Asia',
+    description: 'Indochina & the Maritime Malay Archipelago',
+    view: { center: [113, 6], zoom: 3.0 },
+    members: ['BRN','KHM','IDN','LAO','MYS','MMR','PHL','SGP','THA','TLS','VNM'],
+  },
+  {
+    id: 'south_asia',
+    code: 'REG-08',
+    shortName: 'SOUTH ASIA',
+    name: 'South Asia (Subcontinent)',
+    description: 'Indian subcontinent, Himalayas & Indian Ocean states',
+    view: { center: [78, 22], zoom: 3.2 },
+    members: ['AFG','BGD','BTN','IND','MDV','NPL','PAK','LKA'],
+  },
+  {
+    id: 'east_asia',
+    code: 'REG-09',
+    shortName: 'EAST ASIA',
+    name: 'East Asia',
+    description: 'China, Japan, Korean Peninsula, Mongolia & Taiwan',
+    view: { center: [116, 36], zoom: 2.7 },
+    members: ['CHN','JPN','MNG','PRK','KOR','TWN'],
+  },
+  {
+    id: 'north_africa',
+    code: 'REG-10',
+    shortName: 'NORTH AFRICA',
+    name: 'North Africa & Maghreb',
+    description: 'Mediterranean & Saharan northern African states',
+    view: { center: [12, 26], zoom: 3.0 },
+    members: ['DZA','EGY','LBY','MAR','MRT','SDN','TUN'],
+  },
+  {
+    id: 'west_africa',
+    code: 'REG-11',
+    shortName: 'WEST AFRICA',
+    name: 'West Africa',
+    description: '15 coastal & Sahelian nations of Western Africa',
+    view: { center: [-4, 11], zoom: 3.6 },
+    members: ['BEN','BFA','CPV','CIV','GMB','GHA','GIN','GNB','LBR','MLI','NER','NGA','SEN','SLE','TGO'],
+  },
+  {
+    id: 'east_africa',
+    code: 'REG-12',
+    shortName: 'EAST AFRICA',
+    name: 'East Africa & Horn',
+    description: 'Horn of Africa, Great Lakes & Indian Ocean islands',
+    view: { center: [39, -2], zoom: 3.0 },
+    members: ['BDI','COM','DJI','ERI','ETH','KEN','MDG','MWI','MUS','MOZ','RWA','SYC','SOM','SSD','TZA','UGA'],
+  },
+  {
+    id: 'southern_africa',
+    code: 'REG-13',
+    shortName: 'CENTRAL & SOUTH AFRICA',
+    name: 'Central & Southern Africa',
+    description: 'Congo Basin & Southern African nations',
+    view: { center: [20, -14], zoom: 2.9 },
+    members: ['AGO','BWA','CMR','CAF','TCD','COG','COD','GNQ','SWZ','GAB','LSO','NAM','STP','ZAF','ZMB','ZWE'],
+  },
+  {
+    id: 'andean',
+    code: 'REG-14',
+    shortName: 'ANDEAN STATES',
+    name: 'Andean South America',
+    description: 'Countries along the Andes mountain range',
+    view: { center: [-70, -16], zoom: 2.5 },
+    members: ['ARG','BOL','CHL','COL','ECU','PER','VEN'],
+  },
+  {
+    id: 'western_europe',
+    code: 'REG-15',
+    shortName: 'WESTERN & CENTRAL EUROPE',
+    name: 'Western & Central Europe',
+    description: 'Alpine, Benelux, British Isles, Iberia & Microstates',
+    view: { center: [6, 47], zoom: 4.2 },
+    members: ['AND','AUT','BEL','CZE','FRA','DEU','HUN','IRL','ITA','LIE','LUX','MLT','MCO','NLD','POL','PRT','SMR','SVK','ESP','CHE','GBR','VAT'],
+  },
+  {
+    id: 'pacific_islands',
+    code: 'REG-16',
+    shortName: 'PACIFIC ISLANDS',
+    name: 'Pacific Island Nations',
+    description: 'Micronesia, Melanesia & Polynesia (Oceania)',
+    view: { center: [160, -8], zoom: 2.8 },
+    members: ['FJI','KIR','MHL','FSM','NRU','PLW','PNG','WSM','SLB','TON','TUV','VUT'],
+  },
+];
+
+// ================= INTERNATIONAL ORGANISATIONS DATABASE =================
 const ORGANISATIONS_DB = [
   {
     id: 'eu',
@@ -320,7 +468,6 @@ const ORGANISATIONS_DB = [
   },
 ];
 
-// Palette polygon shading arrays
 const PALETTE_POLYGON_SHADES = {
   swiss: ['#d1d5db', '#cbd5e1', '#9ca3af', '#b6c2cf'],
   obsidian: ['#1e293b', '#263449', '#334155', '#1a2436'],
@@ -366,11 +513,28 @@ function normalizeAnswer(str) {
     .trim();
 }
 
-// ================= PERSISTENT STORAGE (COOKIES + LOCALSTORAGE) =================
+// ================= PERSISTENT STORAGE (LOCALSTORAGE + COOKIE + WINDOW.NAME VAULT) =================
 const STORAGE_KEYS = {
   PALETTE: 'terra_palette_pref',
   RECORDS: 'terra_quiz_records_v1',
+  WINDOW_PREFIX: 'TERRA_VAULT::',
 };
+
+function readWindowVault() {
+  try {
+    if (typeof window.name === 'string' && window.name.startsWith(STORAGE_KEYS.WINDOW_PREFIX)) {
+      return JSON.parse(window.name.slice(STORAGE_KEYS.WINDOW_PREFIX.length)) || {};
+    }
+  } catch (_) {}
+  return {};
+}
+
+function writeWindowVault(patch) {
+  try {
+    const merged = { ...readWindowVault(), ...patch };
+    window.name = STORAGE_KEYS.WINDOW_PREFIX + JSON.stringify(merged);
+  } catch (_) {}
+}
 
 function setPreferenceCookie(name, value) {
   try {
@@ -387,11 +551,13 @@ function getPreferenceCookie(name) {
 }
 
 function loadSavedPalette() {
-  return (
-    localStorage.getItem(STORAGE_KEYS.PALETTE) ||
-    getPreferenceCookie(STORAGE_KEYS.PALETTE) ||
-    'swiss'
-  );
+  try {
+    const ls = localStorage.getItem(STORAGE_KEYS.PALETTE);
+    if (ls) return ls;
+  } catch (_) {}
+  const ck = getPreferenceCookie(STORAGE_KEYS.PALETTE);
+  if (ck) return ck;
+  return readWindowVault().palette || 'swiss';
 }
 
 function savePalettePreference(paletteId) {
@@ -399,15 +565,31 @@ function savePalettePreference(paletteId) {
     localStorage.setItem(STORAGE_KEYS.PALETTE, paletteId);
   } catch (_) {}
   setPreferenceCookie(STORAGE_KEYS.PALETTE, paletteId);
+  writeWindowVault({ palette: paletteId });
 }
 
 function loadQuizRecords() {
+  let merged = { ...(readWindowVault().records || {}) };
+  const ck = getPreferenceCookie(STORAGE_KEYS.RECORDS);
+  if (ck) {
+    try {
+      merged = { ...merged, ...JSON.parse(ck) };
+    } catch (_) {}
+  }
   try {
     const raw = localStorage.getItem(STORAGE_KEYS.RECORDS);
-    return raw ? JSON.parse(raw) : {};
-  } catch (_) {
-    return {};
-  }
+    if (raw) merged = { ...merged, ...JSON.parse(raw) };
+  } catch (_) {}
+  return merged;
+}
+
+function persistAllQuizRecords(records) {
+  const jsonStr = JSON.stringify(records);
+  try {
+    localStorage.setItem(STORAGE_KEYS.RECORDS, jsonStr);
+  } catch (_) {}
+  setPreferenceCookie(STORAGE_KEYS.RECORDS, jsonStr);
+  writeWindowVault({ records });
 }
 
 function saveQuizRecord(quizKey, accuracyPct, timeSeconds, isFullCompletion) {
@@ -426,9 +608,7 @@ function saveQuizRecord(quizKey, accuracyPct, timeSeconds, isFullCompletion) {
       time: timeSeconds,
       fullCompletion: isFullCompletion,
     };
-    try {
-      localStorage.setItem(STORAGE_KEYS.RECORDS, JSON.stringify(records));
-    } catch (_) {}
+    persistAllQuizRecords(records);
   }
   return records[quizKey];
 }
@@ -442,11 +622,13 @@ const state = {
   countryByNumeric: new Map(),
   countryById: new Map(),
   orgsById: new Map(),
+  subregionsById: new Map(),
   geometries: [],
   selectedCountry: null,
   activeFilter: 'all',
   showNames: true,
   showCapitals: false,
+  showIslands: true,
   currentZoom: 1,
   zoomTier: 0,
   mapInitialized: false,
@@ -472,6 +654,7 @@ const state = {
 };
 
 ORGANISATIONS_DB.forEach((org) => state.orgsById.set(org.id, org));
+SUBREGIONS_DB.forEach((sub) => state.subregionsById.set(sub.id, sub));
 
 const CONTINENT_NAMES = {
   all: 'All Regions',
@@ -484,13 +667,13 @@ const CONTINENT_NAMES = {
 };
 
 const CONTINENT_VIEWS = {
-  all: { center: [10, 15], zoom: 1 },
-  europe: { center: [15, 54], zoom: 3.3 },
-  asia: { center: [90, 32], zoom: 2.0 },
+  all: { center: [10, 12], zoom: 1 },
+  europe: { center: [15, 53], zoom: 3.2 },
+  asia: { center: [90, 30], zoom: 2.0 },
   africa: { center: [18, 2], zoom: 2.2 },
   north_america: { center: [-92, 38], zoom: 2.0 },
   south_america: { center: [-60, -20], zoom: 2.2 },
-  oceania: { center: [148, -24], zoom: 2.5 },
+  oceania: { center: [152, -18], zoom: 2.3 },
 };
 
 // ================= SAFE EVENT HELPER & NAVIGATION =================
@@ -570,19 +753,21 @@ document.querySelectorAll('.palette-option').forEach((btn) => {
 });
 
 on('btn-clear-records', 'click', () => {
-  localStorage.removeItem(STORAGE_KEYS.RECORDS);
+  persistAllQuizRecords({});
+  try {
+    localStorage.removeItem(STORAGE_KEYS.RECORDS);
+  } catch (_) {}
   const countEl = document.getElementById('saved-records-count');
   if (countEl) countEl.textContent = '0 PERSONAL RECORDS SAVED';
   renderQuizCatalog();
 });
 
-// Mode Switcher in Quiz Catalog
 on('btn-mode-locate', 'click', () => {
   state.selectedQuizMechanic = 'locate';
   document.getElementById('btn-mode-locate')?.classList.add('active');
   document.getElementById('btn-mode-type')?.classList.remove('active');
   document.getElementById('mode-description-text').textContent =
-    'Click the prompted country directly on the interactive map.';
+    'Click the prompted country directly on the interactive flat map.';
   renderQuizCatalog();
 });
 
@@ -595,21 +780,24 @@ on('btn-mode-type', 'click', () => {
   renderQuizCatalog();
 });
 
-// ================= D3 INTERACTIVE MAP ENGINE (60FPS OPTIMIZED) =================
+// ================= D3 FLAT PLANE MAP ENGINE (ZERO EDGE DISTORTION) =================
 const svgNode = document.getElementById('world-map');
 const svg = d3
   .select('#world-map')
-  .attr('viewBox', '0 0 960 520')
+  .attr('viewBox', '0 0 960 500')
   .attr('preserveAspectRatio', 'xMidYMid meet');
 
 const mapGroup = svg.append('g');
+const planeLayer = mapGroup.append('g');
 const countryLayer = mapGroup.append('g');
 const microstateLayer = mapGroup.append('g');
 const capitalLayer = mapGroup.append('g');
 const labelLayer = mapGroup.append('g');
 
-const projection = d3.geoNaturalEarth1().scale(195).translate([480, 260]);
+// Flat Rectangular Equirectangular Plane Projection (Zero curvature distortion for Pacific islands like Tuvalu)
+const projection = d3.geoEquirectangular().scale(152).translate([480, 260]);
 const pathGenerator = d3.geoPath().projection(projection);
+const graticuleGenerator = d3.geoGraticule().step([20, 20]);
 
 function getZoomTier(k) {
   if (k >= 5.2) return 3;
@@ -624,12 +812,12 @@ const zoomBehavior = d3
   .zoom()
   .extent([
     [0, 0],
-    [960, 520],
+    [960, 500],
   ])
-  .scaleExtent([1, 28])
+  .scaleExtent([1, 32])
   .translateExtent([
-    [-200, -150],
-    [1160, 670],
+    [-120, -100],
+    [1080, 600],
   ])
   .on('start', () => {
     svgNode?.classList.add('is-zooming');
@@ -644,7 +832,7 @@ const zoomBehavior = d3
       requestAnimationFrame(() => {
         zoomRafPending = false;
         if (svgNode) {
-          svgNode.style.setProperty('--inv-scale', (1 / Math.pow(k, 0.72)).toFixed(4));
+          svgNode.style.setProperty('--inv-scale', (1 / Math.pow(k, 0.75)).toFixed(4));
           svgNode.style.setProperty('--inv-sqrt-scale', (1 / Math.sqrt(k)).toFixed(4));
         }
         const newTier = getZoomTier(k);
@@ -691,12 +879,19 @@ async function loadAllData() {
       }
     });
 
-    // Map each country to its International Organisations
     const orgMemberships = new Map();
     ORGANISATIONS_DB.forEach((org) => {
       org.members.forEach((iso) => {
         if (!orgMemberships.has(iso)) orgMemberships.set(iso, []);
         orgMemberships.get(iso).push(org);
+      });
+    });
+
+    const subregionMemberships = new Map();
+    SUBREGIONS_DB.forEach((sub) => {
+      sub.members.forEach((iso) => {
+        if (!subregionMemberships.has(iso)) subregionMemberships.set(iso, []);
+        subregionMemberships.get(iso).push(sub);
       });
     });
 
@@ -727,13 +922,15 @@ async function loadAllData() {
         capitals: [capital],
         capitalCoords: capCoords,
         continents,
+        subregions: subregionMemberships.get(id) || [],
         orgs: orgMemberships.get(id) || [],
         coordinates: centroidCoords,
         projectedCentroid,
         projectedCapital,
         area,
         hasPolygon,
-        isSmallTarget: area < 15000 || !hasPolygon,
+        // Any country smaller than 25,000 km2 or without a polygon gets an Island/Microstate Beacon
+        isSmallTarget: area < 25000 || !hasPolygon,
       };
     }).sort((a, b) => a.name.localeCompare(b.name));
 
@@ -760,22 +957,32 @@ function isCountryInActiveFilter(country) {
     const org = state.orgsById.get(orgId);
     return org ? org.members.includes(country.id) : false;
   }
+  if (state.activeFilter.startsWith('sub:')) {
+    const subId = state.activeFilter.slice(4);
+    const sub = state.subregionsById.get(subId);
+    return sub ? sub.members.includes(country.id) : false;
+  }
   return country.continents.includes(state.activeFilter);
 }
 
-// Create all SVG nodes ONCE so pan/zoom never rebuilds DOM nodes
 function initMap() {
   if (state.mapInitialized) return;
   state.mapInitialized = true;
 
-  // 1. Ocean Sphere
-  countryLayer
+  // 1. Flat Plane Rectangular Backdrop & Coordinate Graticule Grid
+  planeLayer
     .append('path')
     .datum({ type: 'Sphere' })
-    .attr('class', 'ocean-sphere')
+    .attr('class', 'plane-backdrop')
     .attr('d', pathGenerator);
 
-  // 2. Country Polygons
+  planeLayer
+    .append('path')
+    .datum(graticuleGenerator())
+    .attr('class', 'map-graticule')
+    .attr('d', pathGenerator);
+
+  // 2. Country Vector Polygons
   countryLayer
     .selectAll('.country-path')
     .data(state.geometries)
@@ -810,31 +1017,37 @@ function initMap() {
       }
     });
 
-  // 3. Pre-build Microstate Target Nodes (Created Once)
+  // 3. Island & Microstate Beacon Rings (Visible in BOTH Explore Mode & Quiz Mode!)
   const smallCountries = state.countries.filter((c) => c.isSmallTarget);
-  microstateLayer
-    .selectAll('.microstate-target')
+  const beaconGroups = microstateLayer
+    .selectAll('.microstate-group')
     .data(smallCountries, (c) => c.id)
     .enter()
-    .append('circle')
-    .attr('class', 'microstate-target')
-    .attr('cx', (c) => c.projectedCapital[0])
-    .attr('cy', (c) => c.projectedCapital[1])
-    .style('display', 'none')
+    .append('g')
+    .attr('class', 'microstate-group')
+    .attr('transform', (c) => `translate(${c.projectedCapital[0]}, ${c.projectedCapital[1]})`)
     .on('mousemove', (event, c) => {
-      if (state.quiz.finished) {
-        showTooltip(event.clientX, event.clientY, c.name);
+      event.stopPropagation();
+      if (state.mode === 'explore' || (state.mode === 'quiz' && state.quiz.finished)) {
+        showTooltip(event.clientX, event.clientY, `${c.name} (${c.capitals[0]})`);
       }
     })
     .on('mouseleave', hideTooltip)
     .on('click', (event, c) => {
       event.stopPropagation();
-      if (state.mode === 'quiz' && state.quiz.mechanic === 'locate' && state.quiz.active) {
-        handleQuizCountryClick(c);
+      if (state.mode === 'quiz') {
+        if (state.quiz.mechanic === 'locate' && state.quiz.active) {
+          handleQuizCountryClick(c);
+        }
+      } else {
+        selectCountry(c);
       }
     });
 
-  // 4. Pre-build Exact Capital Markers (Created Once using exact capitalCoords)
+  beaconGroups.append('circle').attr('class', 'microstate-ring');
+  beaconGroups.append('circle').attr('class', 'microstate-target');
+
+  // 4. Exact Capital Markers
   const capGroups = capitalLayer
     .selectAll('.cap-group')
     .data(state.countries, (c) => c.id)
@@ -861,15 +1074,15 @@ function initMap() {
     .attr('dy', '-0.65em')
     .text((c) => c.capitals[0]);
 
-  // 5. Pre-build Country Name Labels (Created Once)
+  // 5. Country Name Labels
   labelLayer
     .selectAll('.country-label')
     .data(state.countries, (c) => c.id)
     .enter()
     .append('text')
     .attr('class', 'country-label')
-    .attr('x', (c) => c.projectedCentroid[0])
-    .attr('y', (c) => c.projectedCentroid[1])
+    .attr('x', (c) => (c.isSmallTarget ? c.projectedCapital[0] : c.projectedCentroid[0]))
+    .attr('y', (c) => (c.isSmallTarget ? c.projectedCapital[1] - 6 : c.projectedCentroid[1]))
     .text((c) => c.name);
 
   updateMapColorsAndVisibility();
@@ -930,30 +1143,50 @@ function updateMapColorsAndVisibility() {
       const country = state.countryByNumeric.get(rawId);
       if (isQuiz) {
         const isEligible = country && state.quiz.config.targetCountryIds.includes(country.id);
-        return isEligible ? 1 : 0.4;
+        return isEligible ? 1 : 0.38;
       }
-      return isCountryInActiveFilter(country) ? 1 : 0.4;
+      return isCountryInActiveFilter(country) ? 1 : 0.38;
     });
 
-  // Update Microstate Target Dots
-  microstateLayer
-    .selectAll('.microstate-target')
-    .style('display', (c) =>
-      isQuiz && state.quiz.config.targetCountryIds.includes(c.id) ? null : 'none'
-    )
-    .attr('fill', (c, idx) => (isQuiz ? getQuizCountryFill(c, idx, shades) : shades[0]));
+  // Update Island & Microstate Beacon Rings
+  microstateLayer.selectAll('.microstate-group').each(function (c, idx) {
+    const groupEl = this;
+    const dotEl = groupEl.querySelector('.microstate-target');
+
+    if (isQuiz) {
+      const inQuiz = state.quiz.config.targetCountryIds.includes(c.id);
+      groupEl.style.display = inQuiz ? null : 'none';
+      if (dotEl && inQuiz) {
+        dotEl.setAttribute('fill', getQuizCountryFill(c, idx, shades));
+      }
+      return;
+    }
+
+    // Explore mode visibility
+    if (!state.showIslands || !isCountryInActiveFilter(c)) {
+      groupEl.style.display = 'none';
+      return;
+    }
+
+    groupEl.style.display = null;
+    const isSelected = state.selectedCountry && state.selectedCountry.id === c.id;
+    if (dotEl) {
+      dotEl.setAttribute(
+        'fill',
+        isSelected ? 'var(--country-selected)' : shades[idx % shades.length]
+      );
+    }
+  });
 
   updateLabelsAndMarkersVisibility();
 }
 
-// Fast visibility toggle for pre-built labels & capital pins
 function updateLabelsAndMarkersVisibility() {
   if (!state.mapInitialized) return;
 
   const isQuiz = state.mode === 'quiz' && state.quiz.config;
   const tier = state.zoomTier;
 
-  // Capital Markers (Explore Mode Only)
   capitalLayer.selectAll('.cap-group').each(function (c) {
     const groupEl = this;
     if (isQuiz || !state.showCapitals || !isCountryInActiveFilter(c)) {
@@ -973,12 +1206,11 @@ function updateLabelsAndMarkersVisibility() {
     }
   });
 
-  // Country Name Labels
   labelLayer.selectAll('.country-label').style('display', (c) => {
     const isTierVisible =
       (tier === 0 && c.area > 850000) ||
-      (tier === 1 && c.area > 170000) ||
-      (tier === 2 && c.area > 22000) ||
+      (tier === 1 && c.area > 160000) ||
+      (tier === 2 && (c.area > 18000 || c.isSmallTarget)) ||
       tier >= 3;
 
     if (isQuiz) {
@@ -1012,11 +1244,13 @@ function getRecordLabelHtml(quizId, mechanic) {
 
 function renderQuizCatalog() {
   const continentGrid = document.getElementById('continent-quiz-grid');
+  const subregionGrid = document.getElementById('subregion-quiz-grid');
   const orgGrid = document.getElementById('org-quiz-grid');
   const worldGrid = document.getElementById('world-quiz-grid');
-  if (!continentGrid || !orgGrid || !worldGrid) return;
+  if (!continentGrid || !subregionGrid || !orgGrid || !worldGrid) return;
 
   continentGrid.innerHTML = '';
+  subregionGrid.innerHTML = '';
   orgGrid.innerHTML = '';
   worldGrid.innerHTML = '';
 
@@ -1064,7 +1298,40 @@ function renderQuizCatalog() {
     continentGrid.appendChild(tile);
   });
 
-  // 2. International Organisations (Phase 4)
+  // 2. Geographical Subregions
+  SUBREGIONS_DB.forEach((sub) => {
+    const validMembers = sub.members.filter((iso) => state.countryById.has(iso));
+    const quizId = `sub-${sub.id}`;
+    const tile = document.createElement('button');
+    tile.className = 'quiz-tile';
+    tile.innerHTML = `
+      <div class="quiz-tile-top">
+        <span>${sub.code} // ${modeBadge}</span>
+        <span>↗</span>
+      </div>
+      <div>
+        <div class="quiz-tile-title">${sub.name}</div>
+        <div class="quiz-tile-desc">${sub.description}</div>
+      </div>
+      <div class="quiz-tile-bottom">
+        <span>${validMembers.length} STATES</span>
+        ${getRecordLabelHtml(quizId, mechanic)}
+      </div>
+    `;
+    tile.addEventListener('click', () => {
+      startQuiz({
+        id: quizId,
+        mechanic,
+        title: `${sub.shortName} // ${modeBadge}`,
+        shortTitle: sub.name.toUpperCase(),
+        targetCountryIds: validMembers,
+        view: sub.view,
+      });
+    });
+    subregionGrid.appendChild(tile);
+  });
+
+  // 3. International Organisations
   ORGANISATIONS_DB.forEach((org) => {
     const validMembers = org.members.filter((iso) => state.countryById.has(iso));
     const quizId = `org-${org.id}`;
@@ -1097,7 +1364,7 @@ function renderQuizCatalog() {
     orgGrid.appendChild(tile);
   });
 
-  // 3. Complete World
+  // 4. Complete World
   const allTargets = getQuizTargetCountries('all');
   const worldQuizId = 'world-all';
   const worldTile = document.createElement('button');
@@ -1444,7 +1711,6 @@ function finishQuiz(gaveUp = false) {
     if (missedBox) missedBox.classList.add('hidden');
   }
 
-  // Save & Display Personal Best Record
   const recordKey = `${q.config.id}_${q.mechanic}`;
   const isFullCompletion = q.completedIds.size === q.totalCount;
   const bestRecord = saveQuizRecord(
@@ -1459,6 +1725,7 @@ function finishQuiz(gaveUp = false) {
     bestBanner.textContent = `★ PERSONAL BEST FOR THIS CHALLENGE: ${bestRecord.accuracy}% IN ${formatTime(bestRecord.time)}`;
   }
 
+  renderQuizCatalog();
   document.getElementById('quiz-results-modal')?.classList.remove('hidden');
 }
 
@@ -1513,7 +1780,14 @@ function selectCountry(country) {
     .map((c) => CONTINENT_NAMES[c])
     .join(' / ');
 
-  // Populate International Organisations badges
+  const subEl = document.getElementById('info-subregion');
+  if (subEl) {
+    subEl.textContent =
+      country.subregions && country.subregions.length > 0
+        ? country.subregions.map((s) => s.name).join(' • ')
+        : 'Sovereign Region';
+  }
+
   const orgWrap = document.getElementById('info-orgs');
   if (orgWrap) {
     orgWrap.innerHTML = '';
@@ -1547,7 +1821,7 @@ function flyToCoordinates(coords, zoomLevel) {
   const [x, y] = projected;
 
   const transform = d3.zoomIdentity
-    .translate(480 - x * zoomLevel, 260 - y * zoomLevel)
+    .translate(480 - x * zoomLevel, 250 - y * zoomLevel)
     .scale(zoomLevel);
 
   svg.transition().duration(600).call(zoomBehavior.transform, transform);
@@ -1572,6 +1846,9 @@ on('continent-filter', 'change', (e) => {
   if (state.activeFilter.startsWith('org:')) {
     const org = state.orgsById.get(state.activeFilter.slice(4));
     if (org?.view) flyToCoordinates(org.view.center, org.view.zoom);
+  } else if (state.activeFilter.startsWith('sub:')) {
+    const sub = state.subregionsById.get(state.activeFilter.slice(4));
+    if (sub?.view) flyToCoordinates(sub.view.center, sub.view.zoom);
   } else {
     const view = CONTINENT_VIEWS[state.activeFilter];
     if (view) flyToCoordinates(view.center, view.zoom);
@@ -1588,6 +1865,12 @@ on('btn-toggle-capitals', 'click', (e) => {
   state.showCapitals = !state.showCapitals;
   e.currentTarget.classList.toggle('active', state.showCapitals);
   updateLabelsAndMarkersVisibility();
+});
+
+on('btn-toggle-islands', 'click', (e) => {
+  state.showIslands = !state.showIslands;
+  e.currentTarget.classList.toggle('active', state.showIslands);
+  updateMapColorsAndVisibility();
 });
 
 on('btn-zoom-in', 'click', () => {
@@ -1607,7 +1890,7 @@ on('btn-zoom-reset', 'click', () => {
   const filterEl = document.getElementById('continent-filter');
   if (filterEl) filterEl.value = 'all';
   selectCountry(null);
-  flyToCoordinates([10, 15], 1);
+  flyToCoordinates([10, 12], 1);
 });
 
 // ================= SEARCH BAR AUTOCOMPLETE =================
