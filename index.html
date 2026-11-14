@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TERRA — World Geography</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <script src="https://unpkg.com/topojson-client@3"></script>
+</head>
+<body data-theme="swiss">
+
+  <!-- ================= GLOBAL SETTINGS / PALETTE MODAL ================= -->
+  <div id="settings-modal" class="results-overlay hidden">
+    <div class="results-card settings-card">
+      <div class="settings-header">
+        <div>
+          <span class="mono-tag">SYSTEM PREFERENCES</span>
+          <h2 class="results-title" style="margin-bottom: 0;">CARTOGRAPHIC PALETTE</h2>
+        </div>
+        <button id="btn-close-settings" class="close-btn">✕</button>
+      </div>
+
+      <div class="palette-grid" id="palette-options">
+        <button class="palette-option active" data-palette="swiss">
+          <div class="palette-swatches">
+            <span style="background:#f4f3ef"></span>
+            <span style="background:#dde6ec"></span>
+            <span style="background:#cbd5e1"></span>
+            <span style="background:#111315"></span>
+          </div>
+          <div class="palette-meta">
+            <strong>01 // SWISS PAPER</strong>
+            <span>Warm archival paper & neutral slate</span>
+          </div>
+        </button>
+
+        <button class="palette-option" data-palette="obsidian">
+          <div class="palette-swatches">
+            <span style="background:#0b0f17"></span>
+            <span style="background:#111827"></span>
+            <span style="background:#334155"></span>
+            <span style="background:#f8fafc"></span>
+          </div>
+          <div class="palette-meta">
+            <strong>02 // OBSIDIAN DARK</strong>
+            <span>Low-glare night ops vector theme</span>
+          </div>
+        </button>
+
+        <button class="palette-option" data-palette="blueprint">
+          <div class="palette-swatches">
+            <span style="background:#eef4f8"></span>
+            <span style="background:#cbdceb"></span>
+            <span style="background:#94b0c7"></span>
+            <span style="background:#0f2942"></span>
+          </div>
+          <div class="palette-meta">
+            <strong>03 // NORDIC BLUEPRINT</strong>
+            <span>Technical hydrographic monochrome</span>
+          </div>
+        </button>
+
+        <button class="palette-option" data-palette="parchment">
+          <div class="palette-swatches">
+            <span style="background:#efeae1"></span>
+            <span style="background:#dfd7c8"></span>
+            <span style="background:#c5bba8"></span>
+            <span style="background:#2c251d"></span>
+          </div>
+          <div class="palette-meta">
+            <strong>04 // WARM SANDSTONE</strong>
+            <span>Classic earth & sepia relief tones</span>
+          </div>
+        </button>
+      </div>
+
+      <div class="settings-footer">
+        <span class="mono-tag" id="saved-records-count">0 PERSONAL RECORDS SAVED</span>
+        <button class="hud-btn" id="btn-clear-records">Reset Saved Records</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= SCREEN 1: ULTRA-MINIMALIST HOMEPAGE ================= -->
+  <section id="home-screen" class="screen active">
+    <div class="meridian-grid">
+      <div class="line-v"></div>
+      <div class="line-h"></div>
+    </div>
+
+    <header class="home-bar">
+      <span class="mono-tag">TERRA // CARTOGRAPHIC INDEX</span>
+      <div class="home-bar-right">
+        <span class="mono-tag" id="status-badge">INITIALIZING...</span>
+        <button class="hud-btn" id="btn-home-settings">⚙ Palette</button>
+      </div>
+    </header>
+
+    <main class="home-center">
+      <div class="title-block">
+        <p class="mono-coord">PROJ: NATURAL EARTH I &nbsp;—&nbsp; 0.0000° N, 0.0000° E</p>
+        <h1 class="hero-title">WORLD ATLAS</h1>
+      </div>
+
+      <nav class="portal-split">
+        <button class="portal-item" id="btn-open-atlas">
+          <div class="portal-top">
+            <span class="portal-index">01 / EXPLORE</span>
+            <span class="portal-arrow">↗</span>
+          </div>
+          <span class="portal-name">View World</span>
+        </button>
+
+        <button class="portal-item" id="btn-open-quizzes">
+          <div class="portal-top">
+            <span class="portal-index">02 / CHALLENGE</span>
+            <span class="portal-arrow">↗</span>
+          </div>
+          <span class="portal-name">Take Quizzes</span>
+        </button>
+      </nav>
+    </main>
+
+    <footer class="home-bar bottom">
+      <span class="mono-tag">SCALE 1:50,000,000</span>
+      <span class="mono-tag">VECTOR GEOMETRY</span>
+    </footer>
+  </section>
+
+  <!-- ================= SCREEN 2: QUIZ SELECTION INDEX ================= -->
+  <section id="quiz-select-screen" class="screen">
+    <header class="home-bar">
+      <button class="hud-btn" id="btn-quiz-select-home">← Index</button>
+      <span class="mono-tag">SELECT CARTOGRAPHIC CHALLENGE</span>
+      <div class="home-bar-right">
+        <button class="hud-btn" id="btn-quiz-settings">⚙ Palette</button>
+        <button class="hud-btn" id="btn-quiz-select-atlas">View World ↗</button>
+      </div>
+    </header>
+
+    <main class="quiz-catalog">
+      <!-- Game Mode Selector Bar -->
+      <div class="mode-selector-bar">
+        <div class="mode-selector-label">
+          <span class="mono-tag">SELECT GAMEPLAY MECHANIC</span>
+          <p id="mode-description-text">Click the prompted country directly on the interactive map.</p>
+        </div>
+        <div class="mode-toggle-group">
+          <button class="mode-btn active" id="btn-mode-locate" data-mode="locate">
+            01 // LOCATE ON MAP
+          </button>
+          <button class="mode-btn" id="btn-mode-type" data-mode="type">
+            02 // NAME ALL COUNTRIES
+          </button>
+        </div>
+      </div>
+
+      <div class="catalog-section">
+        <div class="section-meta">
+          <span class="mono-tag">GROUP 01 // CONTINENTS</span>
+          <h2 class="section-heading">CONTINENTAL REGIONS</h2>
+        </div>
+        <div class="quiz-grid" id="continent-quiz-grid"></div>
+      </div>
+
+      <div class="catalog-section">
+        <div class="section-meta">
+          <span class="mono-tag">GROUP 02 // GEOPOLITICAL BLOCKS & UNIONS</span>
+          <h2 class="section-heading">INTERNATIONAL ORGANISATIONS</h2>
+        </div>
+        <div class="quiz-grid" id="org-quiz-grid"></div>
+      </div>
+
+      <div class="catalog-section">
+        <div class="section-meta">
+          <span class="mono-tag">GROUP 03 // GLOBAL</span>
+          <h2 class="section-heading">COMPLETE WORLD</h2>
+        </div>
+        <div class="quiz-grid" id="world-quiz-grid"></div>
+      </div>
+    </main>
+  </section>
+
+  <!-- ================= SCREEN 3: INTERACTIVE MAP (ATLAS + QUIZ ARENA) ================= -->
+  <section id="atlas-screen" class="screen">
+
+    <!-- HUD A: EXPLORE (VIEW WORLD) TOP BAR -->
+    <header id="explore-hud" class="atlas-hud-top">
+      <div class="hud-left">
+        <button class="hud-btn" id="btn-back-home">← Index</button>
+
+        <div class="search-wrapper">
+          <input
+            type="text"
+            id="country-search"
+            placeholder="Search country or capital..."
+            autocomplete="off"
+          />
+          <div id="search-results" class="search-dropdown hidden"></div>
+        </div>
+      </div>
+
+      <div class="hud-right">
+        <select id="continent-filter" class="hud-select">
+          <option value="all">All Regions</option>
+          <optgroup label="Continents">
+            <option value="europe">Europe</option>
+            <option value="asia">Asia</option>
+            <option value="africa">Africa</option>
+            <option value="north_america">North America</option>
+            <option value="south_america">South America</option>
+            <option value="oceania">Oceania</option>
+          </optgroup>
+          <optgroup label="Organisations">
+            <option value="org:eu">European Union (EU)</option>
+            <option value="org:brics">BRICS</option>
+            <option value="org:asean">ASEAN</option>
+            <option value="org:nato">NATO</option>
+            <option value="org:g7">G7</option>
+            <option value="org:g20">G20</option>
+            <option value="org:au">African Union (AU)</option>
+            <option value="org:saarc">SAARC</option>
+            <option value="org:gcc">GCC</option>
+            <option value="org:mercosur">MERCOSUR</option>
+          </optgroup>
+        </select>
+
+        <button class="hud-btn active" id="btn-toggle-names">Names</button>
+        <button class="hud-btn" id="btn-toggle-capitals">Capitals</button>
+        <button class="hud-btn" id="btn-atlas-settings">⚙ Palette</button>
+        <button class="hud-btn primary-accent" id="btn-atlas-to-quiz">Quizzes ↗</button>
+      </div>
+    </header>
+
+    <!-- HUD B: ACTIVE QUIZ ARENA TOP BAR -->
+    <header id="quiz-hud" class="quiz-hud-top hidden">
+      <div class="quiz-hud-left">
+        <button class="hud-btn" id="btn-quit-quiz">✕ Exit</button>
+        <div class="quiz-meta-box">
+          <span class="mono-tag" id="quiz-title-label">EUROPE QUIZ</span>
+          <span class="quiz-progress-text" id="quiz-progress-text">0 / 44</span>
+        </div>
+      </div>
+
+      <!-- Center Control A: LOCATE MODE PROMPT -->
+      <div id="quiz-locate-box" class="quiz-prompt-card">
+        <span class="prompt-prefix">LOCATE</span>
+        <h2 id="quiz-target-name">PORTUGAL</h2>
+        <button class="skip-btn" id="btn-skip-question" title="Reveal location on map">SKIP →</button>
+      </div>
+
+      <!-- Center Control B: TYPE / RECALL MODE INPUT -->
+      <div id="quiz-type-box" class="quiz-type-card hidden">
+        <span class="prompt-prefix">TYPE COUNTRY</span>
+        <input
+          type="text"
+          id="quiz-type-input"
+          placeholder="Enter country name..."
+          autocomplete="off"
+          spellcheck="false"
+        />
+        <button class="giveup-btn" id="btn-give-up" title="End quiz and reveal missed countries in red">
+          GIVE UP ⚑
+        </button>
+      </div>
+
+      <div class="quiz-hud-right">
+        <div class="stat-pill" id="quiz-accuracy-pill">
+          <span class="stat-label" id="quiz-stat-label">ACCURACY</span>
+          <strong id="quiz-accuracy">100%</strong>
+        </div>
+        <div class="stat-pill">
+          <span class="stat-label">TIME</span>
+          <strong id="quiz-timer">00:00</strong>
+        </div>
+      </div>
+
+      <div class="quiz-progress-bar-track">
+        <div id="quiz-progress-fill" class="quiz-progress-bar-fill"></div>
+      </div>
+    </header>
+
+    <div id="quiz-feedback-toast" class="feedback-toast hidden"></div>
+
+    <button id="btn-reopen-results" class="reopen-results-btn hidden">
+      VIEW SCORECARD ↑
+    </button>
+
+    <div class="zoom-controls">
+      <button class="zoom-btn" id="btn-zoom-in" title="Zoom In">+</button>
+      <button class="zoom-btn" id="btn-zoom-out" title="Zoom Out">−</button>
+      <button class="zoom-btn" id="btn-zoom-reset" title="Reset Map">⟲</button>
+    </div>
+
+    <div id="map-container">
+      <svg id="world-map"></svg>
+    </div>
+
+    <div id="map-tooltip" class="tooltip hidden"></div>
+
+    <aside id="country-info-panel" class="info-panel hidden">
+      <div class="panel-header">
+        <div class="flag-title">
+          <img id="info-flag" src="" alt="Country Flag" />
+          <div>
+            <div class="title-row">
+              <h2 id="info-name">Country</h2>
+              <span id="info-iso" class="iso-badge">ISO</span>
+            </div>
+            <p id="info-official">Sovereign State</p>
+          </div>
+        </div>
+        <button id="btn-close-panel" class="close-btn">✕</button>
+      </div>
+
+      <div class="panel-body">
+        <div class="info-item">
+          <span class="info-label">CAPITAL CITY</span>
+          <span class="info-value" id="info-capital">—</span>
+        </div>
+
+        <div class="info-item">
+          <span class="info-label">CONTINENT</span>
+          <span class="info-value" id="info-continent">—</span>
+        </div>
+
+        <div class="info-item">
+          <span class="info-label">INTERNATIONAL ORGANISATIONS</span>
+          <div id="info-orgs" class="org-badges-wrap"></div>
+        </div>
+
+        <div class="info-coords">
+          <span>CAPITAL COORDS</span>
+          <strong id="info-coords-val">0.00° N, 0.00° E</strong>
+        </div>
+
+        <button id="btn-focus-country" class="focus-btn">FOCUS REGION</button>
+      </div>
+    </aside>
+
+    <!-- Quiz Completion Results Modal Overlay -->
+    <div id="quiz-results-modal" class="results-overlay hidden">
+      <div class="results-card">
+        <span class="mono-tag" id="results-category-tag">CHALLENGE COMPLETE</span>
+        <h2 class="results-title" id="results-quiz-title">EUROPE</h2>
+
+        <div class="results-stats-grid">
+          <div class="res-box">
+            <span class="info-label" id="res-box1-label">COMPLETION</span>
+            <strong class="res-big" id="res-accuracy">100%</strong>
+          </div>
+          <div class="res-box">
+            <span class="info-label">IDENTIFIED (GREEN)</span>
+            <strong class="res-big text-green" id="res-found">0 / 0</strong>
+          </div>
+          <div class="res-box">
+            <span class="info-label">TIME ELAPSED</span>
+            <strong class="res-big" id="res-time">00:00</strong>
+          </div>
+          <div class="res-box">
+            <span class="info-label" id="res-box4-label">MISSED (RED)</span>
+            <strong class="res-big text-red" id="res-mistakes">0</strong>
+          </div>
+        </div>
+
+        <div id="personal-best-banner" class="best-banner">
+          PERSONAL BEST: —
+        </div>
+
+        <div id="missed-countries-container" class="missed-list-box hidden">
+          <span class="info-label">MISSED COUNTRIES (CLICK TO LOCATE ON MAP)</span>
+          <div id="missed-countries-list" class="missed-tags"></div>
+        </div>
+
+        <div class="results-actions">
+          <button class="hud-btn active" id="btn-retry-quiz">↻ Retry</button>
+          <button class="hud-btn" id="btn-inspect-map">Inspect Map</button>
+          <button class="hud-btn" id="btn-results-to-catalog">All Quizzes</button>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <script src="app.js"></script>
+</body>
+</html>
