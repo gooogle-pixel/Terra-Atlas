@@ -1,3 +1,8 @@
+// ================= SUPABASE LIVE GLOBAL LEADERBOARD CONFIG =================
+const SUPABASE_URL = 'https://mjohiguvebbqfrhfqmrc.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_SG0jn8CdXYeUT2m6pXUyZQ_P288ut6Z';
+const SUPABASE_TABLE = 'leaderboard';
+
 // ================= BUILT-IN SOVEREIGN COUNTRY DATABASE WITH EXACT CAPITAL COORDINATES =================
 // Format: [numericCode, alpha3, alpha2, name, capital, continentsArray, [capitalLng, capitalLat]]
 const RAW_COUNTRY_DB = [
@@ -210,15 +215,10 @@ const RAW_COUNTRY_DB = [
   ['548','VUT','vu','Vanuatu','Port Vila',['oceania'],[168.32,-17.73]],
 ];
 
-// Curated set of small island nations & microstates that need visible beacon markers on the globe
 const MICRO_ISLANDS_AND_STATES = new Set([
-  // Pacific Island Nations
   'TUV', 'NRU', 'PLW', 'MHL', 'FSM', 'KIR', 'TON', 'WSM', 'VUT', 'FJI', 'SLB',
-  // Caribbean Island Nations
   'ATG', 'BRB', 'DMA', 'GRD', 'KNA', 'LCA', 'VCT', 'TTO', 'BHS', 'JAM',
-  // Indian Ocean, Gulf & Atlantic Island Nations / City-States
   'MDV', 'MUS', 'SYC', 'COM', 'CPV', 'STP', 'BHR', 'SGP', 'BRN', 'TLS',
-  // European Microstates & Small Islands
   'VAT', 'MCO', 'SMR', 'LIE', 'AND', 'MLT', 'LUX', 'CYP',
 ]);
 
@@ -529,6 +529,7 @@ function normalizeAnswer(str) {
 const STORAGE_KEYS = {
   PALETTE: 'terra_palette_pref',
   RECORDS: 'terra_quiz_records_v1',
+  PLAYER_NAME: 'terra_player_name',
   WINDOW_PREFIX: 'TERRA_VAULT::',
 };
 
@@ -580,6 +581,21 @@ function savePalettePreference(paletteId) {
   writeWindowVault({ palette: paletteId });
 }
 
+function loadSavedPlayerName() {
+  try {
+    const ls = localStorage.getItem(STORAGE_KEYS.PLAYER_NAME);
+    if (ls) return ls;
+  } catch (_) {}
+  return readWindowVault().playerName || '';
+}
+
+function savePlayerName(name) {
+  try {
+    localStorage.setItem(STORAGE_KEYS.PLAYER_NAME, name);
+  } catch (_) {}
+  writeWindowVault({ playerName: name });
+}
+
 function loadQuizRecords() {
   let merged = { ...(readWindowVault().records || {}) };
   const ck = getPreferenceCookie(STORAGE_KEYS.RECORDS);
@@ -625,6 +641,90 @@ function saveQuizRecord(quizKey, accuracyPct, timeSeconds, isFullCompletion) {
   return records[quizKey];
 }
 
+// ================= SUPABASE GLOBAL LEADERBOARD API FUNCTIONS =================
+async function fetchGlobalLeaderboard(quizKey, containerEl) {
+  if (!containerEl) return;
+  containerEl.innerHTML = `<div class="lb-empty">FETCHING GLOBAL RANKINGS...</div>`;
+
+  try {
+    const url = `${SUPABASE_URL}/rest/v1/${SUPABASE_TABLE}?quiz_id=eq.${encodeURIComponent(
+      quizKey
+    )}&select=player_name,accuracy,time_seconds,created_at&order=accuracy.desc,time_seconds.asc&limit=10`;
+
+    const res = await fetch(url, {
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${SUPABASE_KEY}`,
+      },
+    });
+
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const rows = await res.json();
+
+    if (!Array.isArray(rows) || rows.length === 0) {
+      containerEl.innerHTML = `<div class="lb-empty">NO GLOBAL RECORDS YET — BE THE FIRST TO POST!</div>`;
+      return;
+    }
+
+    let html = `
+      <div class="lb-row lb-head">
+        <span>RANK</span>
+        <span>PLAYER</span>
+        <span style="text-align:right">SCORE</span>
+        <span style="text-align:right">TIME</span>
+      </div>
+    `;
+
+    rows.forEach((r, idx) => {
+      const safeName = String(r.player_name || 'ANONYMOUS')
+        .replace(/[<>&"']/g, '')
+        .slice(0, 16);
+      const acc = Number(r.accuracy) || 0;
+      const secs = Number(r.time_seconds) || 0;
+
+      html += `
+        <div class="lb-row">
+          <span class="lb-rank">#${idx + 1}</span>
+          <span class="lb-name">${safeName}</span>
+          <span class="lb-acc">${acc}%</span>
+          <span class="lb-time">${formatTime(secs)}</span>
+        </div>
+      `;
+    });
+
+    containerEl.innerHTML = html;
+  } catch (err) {
+    console.error('Leaderboard fetch error:', err);
+    containerEl.innerHTML = `<div class="lb-empty">UNABLE TO LOAD LEADERBOARD // CHECK TABLE SETUP</div>`;
+  }
+}
+
+async function submitScoreToSupabase(quizKey, playerName, accuracyPct, timeSeconds) {
+  const cleanName = playerName.trim().toUpperCase().slice(0, 16) || 'EXPLORER';
+  savePlayerName(cleanName);
+
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${SUPABASE_TABLE}`, {
+    method: 'POST',
+    headers: {
+      apikey: SUPABASE_KEY,
+      Authorization: `Bearer ${SUPABASE_KEY}`,
+      'Content-Type': 'application/json',
+      Prefer: 'return=minimal',
+    },
+    body: JSON.stringify({
+      quiz_id: quizKey,
+      player_name: cleanName,
+      accuracy: accuracyPct,
+      time_seconds: Math.max(1, timeSeconds),
+    }),
+  });
+
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(errText || `HTTP ${res.status}`);
+  }
+}
+
 // ================= GLOBAL STATE =================
 const state = {
   mode: 'explore',
@@ -644,10 +744,13 @@ const state = {
   currentZoom: 1,
   zoomTier: 0,
   mapInitialized: false,
+  standaloneLbQuizConfig: null,
 
   quiz: {
     active: false,
     finished: false,
+    scoreSubmitted: false,
+    finalScorePct: 100,
     mechanic: 'locate',
     config: null,
     queue: [],
@@ -792,6 +895,31 @@ on('btn-mode-type', 'click', () => {
   renderQuizCatalog();
 });
 
+// ================= STANDALONE LEADERBOARD MODAL =================
+function openStandaloneLeaderboard(quizConfig) {
+  state.standaloneLbQuizConfig = quizConfig;
+  const modeLabel = quizConfig.mechanic === 'type' ? 'NAME ALL COUNTRIES' : 'LOCATE ON MAP';
+  document.getElementById('standalone-lb-mode').textContent = `GLOBAL TOP 10 // ${modeLabel}`;
+  document.getElementById('standalone-lb-title').textContent = quizConfig.shortTitle;
+  document.getElementById('standalone-lb-modal')?.classList.remove('hidden');
+
+  const quizKey = `${quizConfig.id}_${quizConfig.mechanic}`;
+  fetchGlobalLeaderboard(quizKey, document.getElementById('standalone-lb-list'));
+}
+
+on('btn-close-standalone-lb', 'click', () => {
+  document.getElementById('standalone-lb-modal')?.classList.add('hidden');
+});
+on('btn-standalone-close2', 'click', () => {
+  document.getElementById('standalone-lb-modal')?.classList.add('hidden');
+});
+on('btn-standalone-play', 'click', () => {
+  document.getElementById('standalone-lb-modal')?.classList.add('hidden');
+  if (state.standaloneLbQuizConfig) {
+    startQuiz(state.standaloneLbQuizConfig);
+  }
+});
+
 // ================= D3 NATURAL EARTH I GLOBE MAP ENGINE (60FPS OPTIMIZED) =================
 const svgNode = document.getElementById('world-map');
 const svg = d3
@@ -806,7 +934,6 @@ const microstateLayer = mapGroup.append('g');
 const capitalLayer = mapGroup.append('g');
 const labelLayer = mapGroup.append('g');
 
-// Classic Natural Earth I Globe Projection
 const projection = d3.geoNaturalEarth1().scale(195).translate([480, 260]);
 const pathGenerator = d3.geoPath().projection(projection);
 const graticuleGenerator = d3.geoGraticule().step([20, 20]);
@@ -941,7 +1068,6 @@ async function loadAllData() {
         projectedCapital,
         area,
         hasPolygon,
-        // Strictly target microstates & small island countries that don't show up clearly on the globe
         isSmallTarget: !hasPolygon || MICRO_ISLANDS_AND_STATES.has(id) || area < 5000,
       };
     }).sort((a, b) => a.name.localeCompare(b.name));
@@ -981,7 +1107,6 @@ function initMap() {
   if (state.mapInitialized) return;
   state.mapInitialized = true;
 
-  // 1. Curved Natural Earth Sphere & Subtle Meridian Graticule
   sphereLayer
     .append('path')
     .datum({ type: 'Sphere' })
@@ -994,7 +1119,6 @@ function initMap() {
     .attr('class', 'map-graticule')
     .attr('d', pathGenerator);
 
-  // 2. Country Vector Polygons
   countryLayer
     .selectAll('.country-path')
     .data(state.geometries)
@@ -1029,7 +1153,6 @@ function initMap() {
       }
     });
 
-  // 3. Small Island & Microstate Beacon Markers (Always available for tiny countries)
   const smallCountries = state.countries.filter((c) => c.isSmallTarget);
   const beaconGroups = microstateLayer
     .selectAll('.microstate-group')
@@ -1059,7 +1182,6 @@ function initMap() {
   beaconGroups.append('circle').attr('class', 'microstate-ring');
   beaconGroups.append('circle').attr('class', 'microstate-target');
 
-  // 4. Exact Capital Markers
   const capGroups = capitalLayer
     .selectAll('.cap-group')
     .data(state.countries, (c) => c.id)
@@ -1086,7 +1208,6 @@ function initMap() {
     .attr('dy', '-0.65em')
     .text((c) => c.capitals[0]);
 
-  // 5. Country Name Labels
   labelLayer
     .selectAll('.country-label')
     .data(state.countries, (c) => c.id)
@@ -1159,7 +1280,6 @@ function updateMapColorsAndVisibility() {
       return isCountryInActiveFilter(country) ? 1 : 0.38;
     });
 
-  // Update Small Island & Microstate Beacon Markers
   microstateLayer.selectAll('.microstate-group').each(function (c, idx) {
     const groupEl = this;
     const dotEl = groupEl.querySelector('.microstate-target');
@@ -1249,7 +1369,38 @@ function getRecordLabelHtml(quizId, mechanic) {
   const records = loadQuizRecords();
   const rec = records[`${quizId}_${mechanic}`];
   if (!rec) return `<span>NO RECORD</span>`;
-  return `<span class="best-record-pill">★ BEST: ${rec.accuracy}% IN ${formatTime(rec.time)}</span>`;
+  return `<span class="best-record-pill">★ ${rec.accuracy}% (${formatTime(rec.time)})</span>`;
+}
+
+function createQuizTileElement(code, modeBadge, title, desc, countLabel, quizConfig) {
+  const tile = document.createElement('div');
+  tile.className = 'quiz-tile';
+  tile.innerHTML = `
+    <div class="quiz-tile-top">
+      <span>${code} // ${modeBadge}</span>
+      <span>↗</span>
+    </div>
+    <div>
+      <div class="quiz-tile-title">${title}</div>
+      ${desc ? `<div class="quiz-tile-desc">${desc}</div>` : ''}
+    </div>
+    <div class="quiz-tile-bottom">
+      <span>${countLabel}</span>
+      ${getRecordLabelHtml(quizConfig.id, quizConfig.mechanic)}
+      <button class="tile-lb-btn" title="View Global Top 10 Leaderboard">🏆 TOP 10</button>
+    </div>
+  `;
+
+  tile.addEventListener('click', (e) => {
+    if (e.target.closest('.tile-lb-btn')) {
+      e.stopPropagation();
+      openStandaloneLeaderboard(quizConfig);
+      return;
+    }
+    startQuiz(quizConfig);
+  });
+
+  return tile;
 }
 
 function renderQuizCatalog() {
@@ -1279,131 +1430,92 @@ function renderQuizCatalog() {
 
   continentList.forEach((item) => {
     const targets = getQuizTargetCountries(item.key);
-    const quizId = `continent-${item.key}`;
-    const tile = document.createElement('button');
-    tile.className = 'quiz-tile';
-    tile.innerHTML = `
-      <div class="quiz-tile-top">
-        <span>${item.code} // ${modeBadge}</span>
-        <span>↗</span>
-      </div>
-      <div>
-        <div class="quiz-tile-title">${item.title}</div>
-      </div>
-      <div class="quiz-tile-bottom">
-        <span>${targets.length} STATES</span>
-        ${getRecordLabelHtml(quizId, mechanic)}
-      </div>
-    `;
-    tile.addEventListener('click', () => {
-      startQuiz({
-        id: quizId,
-        mechanic,
-        title: `${item.title.toUpperCase()} // ${modeBadge}`,
-        shortTitle: item.title.toUpperCase(),
-        targetCountryIds: targets.map((c) => c.id),
-        view: CONTINENT_VIEWS[item.key],
-      });
-    });
-    continentGrid.appendChild(tile);
+    const quizConfig = {
+      id: `continent-${item.key}`,
+      mechanic,
+      title: `${item.title.toUpperCase()} // ${modeBadge}`,
+      shortTitle: item.title.toUpperCase(),
+      targetCountryIds: targets.map((c) => c.id),
+      view: CONTINENT_VIEWS[item.key],
+    };
+    continentGrid.appendChild(
+      createQuizTileElement(
+        item.code,
+        modeBadge,
+        item.title,
+        '',
+        `${targets.length} STATES`,
+        quizConfig
+      )
+    );
   });
 
   // 2. Geographical Subregions
   SUBREGIONS_DB.forEach((sub) => {
     const validMembers = sub.members.filter((iso) => state.countryById.has(iso));
-    const quizId = `sub-${sub.id}`;
-    const tile = document.createElement('button');
-    tile.className = 'quiz-tile';
-    tile.innerHTML = `
-      <div class="quiz-tile-top">
-        <span>${sub.code} // ${modeBadge}</span>
-        <span>↗</span>
-      </div>
-      <div>
-        <div class="quiz-tile-title">${sub.name}</div>
-        <div class="quiz-tile-desc">${sub.description}</div>
-      </div>
-      <div class="quiz-tile-bottom">
-        <span>${validMembers.length} STATES</span>
-        ${getRecordLabelHtml(quizId, mechanic)}
-      </div>
-    `;
-    tile.addEventListener('click', () => {
-      startQuiz({
-        id: quizId,
-        mechanic,
-        title: `${sub.shortName} // ${modeBadge}`,
-        shortTitle: sub.name.toUpperCase(),
-        targetCountryIds: validMembers,
-        view: sub.view,
-      });
-    });
-    subregionGrid.appendChild(tile);
+    const quizConfig = {
+      id: `sub-${sub.id}`,
+      mechanic,
+      title: `${sub.shortName} // ${modeBadge}`,
+      shortTitle: sub.name.toUpperCase(),
+      targetCountryIds: validMembers,
+      view: sub.view,
+    };
+    subregionGrid.appendChild(
+      createQuizTileElement(
+        sub.code,
+        modeBadge,
+        sub.name,
+        sub.description,
+        `${validMembers.length} STATES`,
+        quizConfig
+      )
+    );
   });
 
   // 3. International Organisations
   ORGANISATIONS_DB.forEach((org) => {
     const validMembers = org.members.filter((iso) => state.countryById.has(iso));
-    const quizId = `org-${org.id}`;
-    const tile = document.createElement('button');
-    tile.className = 'quiz-tile';
-    tile.innerHTML = `
-      <div class="quiz-tile-top">
-        <span>${org.code} // ${modeBadge}</span>
-        <span>↗</span>
-      </div>
-      <div>
-        <div class="quiz-tile-title">${org.name}</div>
-        <div class="quiz-tile-desc">${org.description}</div>
-      </div>
-      <div class="quiz-tile-bottom">
-        <span>${validMembers.length} MEMBERS</span>
-        ${getRecordLabelHtml(quizId, mechanic)}
-      </div>
-    `;
-    tile.addEventListener('click', () => {
-      startQuiz({
-        id: quizId,
-        mechanic,
-        title: `${org.shortName} // ${modeBadge}`,
-        shortTitle: org.name.toUpperCase(),
-        targetCountryIds: validMembers,
-        view: org.view,
-      });
-    });
-    orgGrid.appendChild(tile);
+    const quizConfig = {
+      id: `org-${org.id}`,
+      mechanic,
+      title: `${org.shortName} // ${modeBadge}`,
+      shortTitle: org.name.toUpperCase(),
+      targetCountryIds: validMembers,
+      view: org.view,
+    };
+    orgGrid.appendChild(
+      createQuizTileElement(
+        org.code,
+        modeBadge,
+        org.name,
+        org.description,
+        `${validMembers.length} MEMBERS`,
+        quizConfig
+      )
+    );
   });
 
   // 4. Complete World
   const allTargets = getQuizTargetCountries('all');
-  const worldQuizId = 'world-all';
-  const worldTile = document.createElement('button');
-  worldTile.className = 'quiz-tile';
-  worldTile.innerHTML = `
-    <div class="quiz-tile-top">
-      <span>GL-01 // ${modeBadge}</span>
-      <span>↗</span>
-    </div>
-    <div>
-      <div class="quiz-tile-title">World Sovereign States</div>
-      <div class="quiz-tile-desc">Complete global sovereign geography test</div>
-    </div>
-    <div class="quiz-tile-bottom">
-      <span>${allTargets.length} COUNTRIES</span>
-      ${getRecordLabelHtml(worldQuizId, mechanic)}
-    </div>
-  `;
-  worldTile.addEventListener('click', () => {
-    startQuiz({
-      id: worldQuizId,
-      mechanic,
-      title: `WORLD // ${modeBadge}`,
-      shortTitle: 'WORLD COUNTRIES',
-      targetCountryIds: allTargets.map((c) => c.id),
-      view: CONTINENT_VIEWS.all,
-    });
-  });
-  worldGrid.appendChild(worldTile);
+  const worldConfig = {
+    id: 'world-all',
+    mechanic,
+    title: `WORLD // ${modeBadge}`,
+    shortTitle: 'WORLD COUNTRIES',
+    targetCountryIds: allTargets.map((c) => c.id),
+    view: CONTINENT_VIEWS.all,
+  };
+  worldGrid.appendChild(
+    createQuizTileElement(
+      'GL-01',
+      modeBadge,
+      'World Sovereign States',
+      'Complete global sovereign geography test',
+      `${allTargets.length} COUNTRIES`,
+      worldConfig
+    )
+  );
 }
 
 function shuffleArray(arr) {
@@ -1426,6 +1538,8 @@ function startQuiz(config) {
   state.quiz = {
     active: true,
     finished: false,
+    scoreSubmitted: false,
+    finalScorePct: 100,
     mechanic,
     config,
     queue: shuffledIds,
@@ -1658,13 +1772,13 @@ on('btn-give-up', 'click', () => {
   finishQuiz(true);
 });
 
-// ================= FINISH QUIZ & PERSISTENT PERSONAL BESTS =================
+// ================= FINISH QUIZ & LIVE LEADERBOARD INTEGRATION =================
 function finishQuiz(gaveUp = false) {
   stopQuizTimer();
   const q = state.quiz;
   q.active = false;
   q.finished = true;
-  q.elapsedSeconds = Math.floor((Date.now() - q.startTime) / 1000);
+  q.elapsedSeconds = Math.max(1, Math.floor((Date.now() - q.startTime) / 1000));
 
   updateMapColorsAndVisibility();
 
@@ -1721,6 +1835,8 @@ function finishQuiz(gaveUp = false) {
     if (missedBox) missedBox.classList.add('hidden');
   }
 
+  q.finalScorePct = finalScorePct;
+
   const recordKey = `${q.config.id}_${q.mechanic}`;
   const isFullCompletion = q.completedIds.size === q.totalCount;
   const bestRecord = saveQuizRecord(
@@ -1732,12 +1848,69 @@ function finishQuiz(gaveUp = false) {
 
   const bestBanner = document.getElementById('personal-best-banner');
   if (bestBanner && bestRecord) {
-    bestBanner.textContent = `★ PERSONAL BEST FOR THIS CHALLENGE: ${bestRecord.accuracy}% IN ${formatTime(bestRecord.time)}`;
+    bestBanner.textContent = `★ YOUR PERSONAL BEST: ${bestRecord.accuracy}% IN ${formatTime(bestRecord.time)}`;
   }
+
+  // Prepare Global Leaderboard submission box & load Top 10
+  const nameInput = document.getElementById('lb-player-name');
+  if (nameInput) nameInput.value = loadSavedPlayerName();
+
+  const submitBtn = document.getElementById('btn-submit-lb');
+  const statusEl = document.getElementById('lb-submit-status');
+  if (submitBtn) {
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'POST SCORE ↗';
+  }
+  if (statusEl) statusEl.textContent = '';
+
+  fetchGlobalLeaderboard(recordKey, document.getElementById('results-lb-list'));
 
   renderQuizCatalog();
   document.getElementById('quiz-results-modal')?.classList.remove('hidden');
 }
+
+// Submit Score to Global Leaderboard Button
+on('btn-submit-lb', 'click', async () => {
+  const q = state.quiz;
+  if (!q.config || q.scoreSubmitted) return;
+
+  const nameInput = document.getElementById('lb-player-name');
+  const submitBtn = document.getElementById('btn-submit-lb');
+  const statusEl = document.getElementById('lb-submit-status');
+
+  const playerName = nameInput?.value.trim() || 'EXPLORER';
+  const recordKey = `${q.config.id}_${q.mechanic}`;
+
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'POSTING...';
+  }
+  if (statusEl) statusEl.textContent = 'UPLOADING TO GLOBAL INDEX...';
+
+  try {
+    await submitScoreToSupabase(recordKey, playerName, q.finalScorePct, q.elapsedSeconds);
+    q.scoreSubmitted = true;
+    if (submitBtn) submitBtn.textContent = '✓ POSTED';
+    if (statusEl) statusEl.textContent = 'SCORE PUBLISHED TO GLOBAL LEADERBOARD!';
+    fetchGlobalLeaderboard(recordKey, document.getElementById('results-lb-list'));
+  } catch (err) {
+    console.error('Failed to submit score:', err);
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'RETRY POST ↗';
+    }
+    if (statusEl) {
+      statusEl.textContent = 'ERROR: MAKE SURE RLS IS UNCHECKED ON SUPABASE TABLE.';
+    }
+  }
+});
+
+on('btn-refresh-lb', 'click', () => {
+  const q = state.quiz;
+  if (!q.config) return;
+  const recordKey = `${q.config.id}_${q.mechanic}`;
+  fetchGlobalLeaderboard(recordKey, document.getElementById('results-lb-list'));
+});
 
 on('btn-inspect-map', 'click', () => {
   document.getElementById('quiz-results-modal')?.classList.add('hidden');
