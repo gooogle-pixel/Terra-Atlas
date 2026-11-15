@@ -210,6 +210,18 @@ const RAW_COUNTRY_DB = [
   ['548','VUT','vu','Vanuatu','Port Vila',['oceania'],[168.32,-17.73]],
 ];
 
+// Curated set of small island nations & microstates that need visible beacon markers on the globe
+const MICRO_ISLANDS_AND_STATES = new Set([
+  // Pacific Island Nations
+  'TUV', 'NRU', 'PLW', 'MHL', 'FSM', 'KIR', 'TON', 'WSM', 'VUT', 'FJI', 'SLB',
+  // Caribbean Island Nations
+  'ATG', 'BRB', 'DMA', 'GRD', 'KNA', 'LCA', 'VCT', 'TTO', 'BHS', 'JAM',
+  // Indian Ocean, Gulf & Atlantic Island Nations / City-States
+  'MDV', 'MUS', 'SYC', 'COM', 'CPV', 'STP', 'BHR', 'SGP', 'BRN', 'TLS',
+  // European Microstates & Small Islands
+  'VAT', 'MCO', 'SMR', 'LIE', 'AND', 'MLT', 'LUX', 'CYP',
+]);
+
 // ================= EDUCATIONAL GEOGRAPHICAL SUBREGIONS DATABASE =================
 const SUBREGIONS_DB = [
   {
@@ -667,13 +679,13 @@ const CONTINENT_NAMES = {
 };
 
 const CONTINENT_VIEWS = {
-  all: { center: [10, 12], zoom: 1 },
-  europe: { center: [15, 53], zoom: 3.2 },
-  asia: { center: [90, 30], zoom: 2.0 },
+  all: { center: [10, 15], zoom: 1 },
+  europe: { center: [15, 54], zoom: 3.3 },
+  asia: { center: [90, 32], zoom: 2.0 },
   africa: { center: [18, 2], zoom: 2.2 },
   north_america: { center: [-92, 38], zoom: 2.0 },
   south_america: { center: [-60, -20], zoom: 2.2 },
-  oceania: { center: [152, -18], zoom: 2.3 },
+  oceania: { center: [148, -24], zoom: 2.5 },
 };
 
 // ================= SAFE EVENT HELPER & NAVIGATION =================
@@ -767,7 +779,7 @@ on('btn-mode-locate', 'click', () => {
   document.getElementById('btn-mode-locate')?.classList.add('active');
   document.getElementById('btn-mode-type')?.classList.remove('active');
   document.getElementById('mode-description-text').textContent =
-    'Click the prompted country directly on the interactive flat map.';
+    'Click the prompted country directly on the interactive globe map.';
   renderQuizCatalog();
 });
 
@@ -780,22 +792,22 @@ on('btn-mode-type', 'click', () => {
   renderQuizCatalog();
 });
 
-// ================= D3 FLAT PLANE MAP ENGINE (ZERO EDGE DISTORTION) =================
+// ================= D3 NATURAL EARTH I GLOBE MAP ENGINE (60FPS OPTIMIZED) =================
 const svgNode = document.getElementById('world-map');
 const svg = d3
   .select('#world-map')
-  .attr('viewBox', '0 0 960 500')
+  .attr('viewBox', '0 0 960 520')
   .attr('preserveAspectRatio', 'xMidYMid meet');
 
 const mapGroup = svg.append('g');
-const planeLayer = mapGroup.append('g');
+const sphereLayer = mapGroup.append('g');
 const countryLayer = mapGroup.append('g');
 const microstateLayer = mapGroup.append('g');
 const capitalLayer = mapGroup.append('g');
 const labelLayer = mapGroup.append('g');
 
-// Flat Rectangular Equirectangular Plane Projection (Zero curvature distortion for Pacific islands like Tuvalu)
-const projection = d3.geoEquirectangular().scale(152).translate([480, 260]);
+// Classic Natural Earth I Globe Projection
+const projection = d3.geoNaturalEarth1().scale(195).translate([480, 260]);
 const pathGenerator = d3.geoPath().projection(projection);
 const graticuleGenerator = d3.geoGraticule().step([20, 20]);
 
@@ -812,12 +824,12 @@ const zoomBehavior = d3
   .zoom()
   .extent([
     [0, 0],
-    [960, 500],
+    [960, 520],
   ])
   .scaleExtent([1, 32])
   .translateExtent([
-    [-120, -100],
-    [1080, 600],
+    [-200, -150],
+    [1160, 670],
   ])
   .on('start', () => {
     svgNode?.classList.add('is-zooming');
@@ -832,7 +844,7 @@ const zoomBehavior = d3
       requestAnimationFrame(() => {
         zoomRafPending = false;
         if (svgNode) {
-          svgNode.style.setProperty('--inv-scale', (1 / Math.pow(k, 0.75)).toFixed(4));
+          svgNode.style.setProperty('--inv-scale', (1 / Math.pow(k, 0.74)).toFixed(4));
           svgNode.style.setProperty('--inv-sqrt-scale', (1 / Math.sqrt(k)).toFixed(4));
         }
         const newTier = getZoomTier(k);
@@ -929,8 +941,8 @@ async function loadAllData() {
         projectedCapital,
         area,
         hasPolygon,
-        // Any country smaller than 25,000 km2 or without a polygon gets an Island/Microstate Beacon
-        isSmallTarget: area < 25000 || !hasPolygon,
+        // Strictly target microstates & small island countries that don't show up clearly on the globe
+        isSmallTarget: !hasPolygon || MICRO_ISLANDS_AND_STATES.has(id) || area < 5000,
       };
     }).sort((a, b) => a.name.localeCompare(b.name));
 
@@ -969,14 +981,14 @@ function initMap() {
   if (state.mapInitialized) return;
   state.mapInitialized = true;
 
-  // 1. Flat Plane Rectangular Backdrop & Coordinate Graticule Grid
-  planeLayer
+  // 1. Curved Natural Earth Sphere & Subtle Meridian Graticule
+  sphereLayer
     .append('path')
     .datum({ type: 'Sphere' })
-    .attr('class', 'plane-backdrop')
+    .attr('class', 'ocean-sphere')
     .attr('d', pathGenerator);
 
-  planeLayer
+  sphereLayer
     .append('path')
     .datum(graticuleGenerator())
     .attr('class', 'map-graticule')
@@ -1017,7 +1029,7 @@ function initMap() {
       }
     });
 
-  // 3. Island & Microstate Beacon Rings (Visible in BOTH Explore Mode & Quiz Mode!)
+  // 3. Small Island & Microstate Beacon Markers (Always available for tiny countries)
   const smallCountries = state.countries.filter((c) => c.isSmallTarget);
   const beaconGroups = microstateLayer
     .selectAll('.microstate-group')
@@ -1109,7 +1121,6 @@ function updateMapColorsAndVisibility() {
   const isQuiz = state.mode === 'quiz' && state.quiz.config;
   const shades = PALETTE_POLYGON_SHADES[state.palette] || PALETTE_POLYGON_SHADES.swiss;
 
-  // Update Country Polygons
   countryLayer
     .selectAll('.country-path')
     .classed('interactive', (geo) => {
@@ -1148,7 +1159,7 @@ function updateMapColorsAndVisibility() {
       return isCountryInActiveFilter(country) ? 1 : 0.38;
     });
 
-  // Update Island & Microstate Beacon Rings
+  // Update Small Island & Microstate Beacon Markers
   microstateLayer.selectAll('.microstate-group').each(function (c, idx) {
     const groupEl = this;
     const dotEl = groupEl.querySelector('.microstate-target');
@@ -1162,7 +1173,6 @@ function updateMapColorsAndVisibility() {
       return;
     }
 
-    // Explore mode visibility
     if (!state.showIslands || !isCountryInActiveFilter(c)) {
       groupEl.style.display = 'none';
       return;
@@ -1821,7 +1831,7 @@ function flyToCoordinates(coords, zoomLevel) {
   const [x, y] = projected;
 
   const transform = d3.zoomIdentity
-    .translate(480 - x * zoomLevel, 250 - y * zoomLevel)
+    .translate(480 - x * zoomLevel, 260 - y * zoomLevel)
     .scale(zoomLevel);
 
   svg.transition().duration(600).call(zoomBehavior.transform, transform);
@@ -1890,7 +1900,7 @@ on('btn-zoom-reset', 'click', () => {
   const filterEl = document.getElementById('continent-filter');
   if (filterEl) filterEl.value = 'all';
   selectCountry(null);
-  flyToCoordinates([10, 12], 1);
+  flyToCoordinates([10, 15], 1);
 });
 
 // ================= SEARCH BAR AUTOCOMPLETE =================
