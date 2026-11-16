@@ -84,6 +84,90 @@ body[data-theme="parchment"] {
   --beacon-ring: rgba(44, 37, 29, 0.55);
 }
 
+body[data-theme="alpine"] {
+  --bg-paper: #edf1ee;
+  --bg-secondary: #e0e7e2;
+  --ink: #14241b;
+  --ink-muted: #536b5d;
+  --hairline: #c5d3c9;
+  --ocean-bg: #d5e0d7;
+  --sphere-fill: #c9d6cc;
+  --sphere-stroke: #a3b8a8;
+  --graticule-stroke: rgba(20, 36, 27, 0.065);
+  --border-stroke: #edf1ee;
+  --country-dim: #cfd9d1;
+  --country-hover: #2d4f3c;
+  --country-selected: #059669;
+  --label-fill: #14241b;
+  --label-halo: #edf1ee;
+  --cap-dot: #14241b;
+  --cap-stroke: #edf1ee;
+  --beacon-ring: rgba(20, 36, 27, 0.55);
+}
+
+body[data-theme="monolith"] {
+  --bg-paper: #121212;
+  --bg-secondary: #1c1c1c;
+  --ink: #f5f5f5;
+  --ink-muted: #8e8e8e;
+  --hairline: #2e2e2e;
+  --ocean-bg: #0a0a0a;
+  --sphere-fill: #141414;
+  --sphere-stroke: #262626;
+  --graticule-stroke: rgba(255, 255, 255, 0.05);
+  --border-stroke: #121212;
+  --country-dim: #1c1c1c;
+  --country-hover: #737373;
+  --country-selected: #e11d48;
+  --label-fill: #f5f5f5;
+  --label-halo: #121212;
+  --cap-dot: #fb7185;
+  --cap-stroke: #121212;
+  --beacon-ring: rgba(245, 245, 245, 0.6);
+}
+
+body[data-theme="terminal"] {
+  --bg-paper: #060d09;
+  --bg-secondary: #0c1a12;
+  --ink: #6ee7b7;
+  --ink-muted: #347c5c;
+  --hairline: #163826;
+  --ocean-bg: #040906;
+  --sphere-fill: #08130d;
+  --sphere-stroke: #143322;
+  --graticule-stroke: rgba(110, 231, 183, 0.07);
+  --border-stroke: #060d09;
+  --country-dim: #0b1a11;
+  --country-hover: #059669;
+  --country-selected: #34d399;
+  --label-fill: #a7f3d0;
+  --label-halo: #060d09;
+  --cap-dot: #34d399;
+  --cap-stroke: #060d09;
+  --beacon-ring: rgba(110, 231, 183, 0.65);
+}
+
+body[data-theme="kyoto"] {
+  --bg-paper: #f5f0eb;
+  --bg-secondary: #ebe3dc;
+  --ink: #2b2338;
+  --ink-muted: #766b85;
+  --hairline: #d9cfc7;
+  --ocean-bg: #e6ded6;
+  --sphere-fill: #ded5cc;
+  --sphere-stroke: #c4b8ad;
+  --graticule-stroke: rgba(43, 35, 56, 0.06);
+  --border-stroke: #f5f0eb;
+  --country-dim: #dfd7cf;
+  --country-hover: #584b6e;
+  --country-selected: #7c3aed;
+  --label-fill: #2b2338;
+  --label-halo: #f5f0eb;
+  --cap-dot: #2b2338;
+  --cap-stroke: #f5f0eb;
+  --beacon-ring: rgba(43, 35, 56, 0.55);
+}
+
 :root {
   --quiz-correct: #10b981;
   --quiz-wrong: #ef4444;
