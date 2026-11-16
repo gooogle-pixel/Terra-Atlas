@@ -3,8 +3,251 @@ const SUPABASE_URL = 'https://mjohiguvebbqfrhfqmrc.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_SG0jn8CdXYeUT2m6pXUyZQ_P288ut6Z';
 const SUPABASE_TABLE = 'leaderboard';
 
+// ================= PROFANITY & NAME VALIDATION FILTER =================
+
+const BLOCKED_NAME_ROOTS = [
+  // ==========================================
+  // ENGLISH PROFANITY & SWEAR WORDS
+  // ==========================================
+  'fuck', 'fuk', 'fck', 'fcker', 'fucker', 'fucking', 'fucked',
+  'shit', 'shat', 'shitty', 'bullshit', 'horseshit',
+  'bitch', 'btch', 'bitches', 'bitchass',
+  'cunt', 'cunts', 'cunting',
+  'dick', 'dicks', 'dickhead', 'dickwad',
+  'cock', 'cocks', 'cockhead', 'cocksucker',
+  'pussy', 'pussies', 'puss','cockandballtorture','coc&balltorture','coc&balltortur',
+  'asshole', 'arsehole', 'asshat', 'arse',
+  'bastard', 'bastards', 'bstrd',
+  'slut', 'sluts', 'whore', 'whores',
+  'skank', 'twat', 'wank', 'wanker',
+  'prick', 'douche', 'douchebag',
+  'motherfucker', 'mofo', 'mfkr',
+  'sonofabitch', 'sob',
+  'jackass', 'dumbass', 'dipshit',
+  'shithead', 'fuckwit', 'dumbfuck',
+  'scumbag', 'shitbag', 'fuckface',
+
+  // ==========================================
+  // SEXUAL / ANATOMICAL / EXPLICIT TERMS
+  // ==========================================
+  'penis', 'vagina', 'boob', 'boobs',
+  'tits', 'titt', 'titjob',
+  'cum', 'cumming', 'jizz', 'semen',
+  'dildo', 'vibrator', 'fleshlight',
+  'porn', 'porno', 'pornhub', 'hentai',
+  'horny', 'milf', 'dilf',
+  'orgasm', 'orgy', 'blowjob', 'handjob',
+  'footjob', 'rimjob', 'anal',
+  'deepthroat', 'gangbang', 'threesome',
+  'masturbat', 'masturbation',
+  'ejaculat', 'sperm',
+  'bdsm', 'bondage', 'fetish',
+  'nudes', 'nude', 'naked',
+  'onlyfans', 'sexwork', 'prostitut',
+  'escort', 'hooker', 'stripper','teeth','straight-teeth',
+
+  // ==========================================
+  // RACIAL / ETHNIC / HOMOPHOBIC SLURS
+  // ==========================================
+  'nigg', 'nigga', 'nigger', 'nigr',
+  'fagg', 'fagot', 'faggot',
+  'dyke', 'tranny', 'shemale',
+  'retard', 'rtrd', 'retarded',
+  'spic', 'chink', 'kike', 'gook',
+  'wetback', 'coon', 'raghead',
+  'towelhead', 'cracker', 'honky',
+  'beaner', 'wop', 'zipperhead',
+  'darkie', 'paki', 'gringo',
+
+  // ==========================================
+  // HATE SPEECH / EXTREMISM
+  // ==========================================
+  'hitler', 'adolfhitler',
+  'nazi', 'nazism', 'nazis',
+  'heilhitler', 'siegheil',
+  'aryanbrotherhood',
+  'whitepower', 'whitesupremacy',
+  'kkk', 'ku klux klan',
+  'isis', 'isil', 'daesh',
+  'alqaeda', 'taliban',
+  'terrorist', 'terrorism',
+  'jihadist', 'jihad',
+  'neo-nazi', 'neonazi',
+  'genocide', 'ethniccleansing',
+
+  // ==========================================
+  // VIOLENCE / ABUSE / SELF-HARM
+  // ==========================================
+  'rape', 'rapist', 'raping',
+  'pedo', 'paedo', 'pedophile', 'paedophile',
+  'molest', 'molester', 'molestation',
+  'incest', 'incestuous',
+  'suicide', 'suicidal',
+  'kys', 'killyourself',
+  'murder', 'murderer',
+  'torture', 'necrophil',
+  'childabuse', 'childmolest','edp445',
+
+  // ==========================================
+  // HINDI / HINGLISH PROFANITY
+  // ==========================================
+  'chutiya', 'chutiye', 'chutiyapa',
+  'chut', 'chutmar',
+  'madarchod', 'madarchut',
+  'bhenchod', 'behenchod', 'bhenchodd',
+  'bhencho', 'behencho',
+  'bsdk', 'bhosdike', 'bhosdi',
+  'bhosda', 'bhosad', 'bhosadike',
+  'gandu', 'gaand', 'gand',
+  'gaandfat', 'gandmasti',
+  'randi', 'randibaaz', 'randwa',
+  'lund', 'lundchoos', 'lundfakir',
+  'lauda', 'laude', 'lavda', 'lavde',
+  'lodu', 'lode', 'lulli',
+  'harami', 'haramkhor',
+  'kamina', 'kamine', 'kameena',
+  'kutte', 'kutta', 'kutti',
+  'suar', 'suar ki aulad',
+  'saala', 'saali', 'sala',
+  'bawaseer',
+  'jhant', 'jhaant',
+  'chodu', 'chod', 'chodna',
+  'chodumal',
+  'mc', 'bc',
+
+  // ==========================================
+  // HINDI / HINGLISH ROMANIZED VARIATIONS
+  // ==========================================
+  'ch0tiya', 'ch0tiye',
+  'm4darchod', 'm4darch0d',
+  'bhench0d', 'b3henchod',
+  'bh0sdike', 'bh0sdi',
+  'g4ndu', 'g4nd',
+  'l4uda', 'l4vda',
+  'r4ndi',
+  'ch00t', 'ch00tiya',
+  'maderchod', 'madrchod',
+  'bhenchot', 'behnchod',
+
+  // ==========================================
+  // CONTROVERSIAL PERSONALITIES / INTERNET FIGURES
+  // ==========================================
+  // Bonnie Blue
+  'bonnieblue',
+  'bonnie_blue',
+  'bonnie.blue',
+  'bonnyblew',
+  'bonnieblew',
+
+
+  // Charlie Kirk
+  'charliekirk',
+  'charlie_kirk',
+  'charlie.kirk',
+
+  // Andrew Tate
+  'andrewtate',
+  'andrew_tate',
+  'cobratate',
+  'tristantate',
+
+  // Adolf Hitler
+  'adolfhitler',
+
+  // Jeffrey Epstein
+  'jeffreyepstein',
+  'jeffrey_epstein',
+  'epstein',
+  'ghislaine maxwell',
+
+  // Osama Bin Laden
+  'osamabinladen',
+  'binladen',
+  'netanyahu',
+  'netanyahoo',
+  'n8anyahu',
+  'n8anyahoo',
+  'big yahu',
+  'yahu',
+
+  // Other controversial internet personalities
+  'nikocadoavocado',
+  'sneako',
+  'freshandfit',
+  'nickfuentes',
+
+  // ==========================================
+  // ADDITIONAL INTERNET SLANG / BYPASS TERMS
+  // ==========================================
+  'kys',
+  'kms',
+  'stfu',
+  'gtfo',
+  'wtf',
+  'fml',
+  'pos',
+  'sob',
+];
+
+
+
+function validatePlayerName(rawInput) {
+  const trimmed = (rawInput || '').trim();
+  if (!trimmed) return { valid: true, cleanName: 'EXPLORER' };
+
+  const cleanName = trimmed
+    .toUpperCase()
+    .replace(/[^A-Z0-9 _-]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 16);
+
+  if (cleanName.length < 2) {
+    return {
+      valid: false,
+      reason: 'NAME MUST BE AT LEAST 2 LETTERS OR NUMBERS.',
+    };
+  }
+
+  const deLeeted = trimmed
+    .toLowerCase()
+    .replace(/0/g, 'o')
+    .replace(/1|!|\|/g, 'i')
+    .replace(/3/g, 'e')
+    .replace(/4|@/g, 'a')
+    .replace(/5|\$/g, 's')
+    .replace(/7/g, 't')
+    .replace(/8/g, 'b')
+    .replace(/[^a-z]/g, '');
+
+  const collapsed = deLeeted.replace(/(.)\1{2,}/g, '$1$1');
+  const ultraCollapsed = deLeeted.replace(/(.)\1+/g, '$1');
+
+  for (const badWord of BLOCKED_NAME_ROOTS) {
+    if (badWord.length <= 3) {
+      const words = cleanName.toLowerCase().split(/[\s_-]+/);
+      if (words.includes(badWord) || deLeeted === badWord) {
+        return {
+          valid: false,
+          reason: 'NAME CONTAINS RESTRICTED LANGUAGE. CHOOSE ANOTHER ALIAS.',
+        };
+      }
+    } else if (
+      deLeeted.includes(badWord) ||
+      collapsed.includes(badWord) ||
+      ultraCollapsed.includes(badWord)
+    ) {
+      return {
+        valid: false,
+        reason: 'NAME CONTAINS RESTRICTED LANGUAGE. CHOOSE ANOTHER ALIAS.',
+      };
+    }
+  }
+
+  return { valid: true, cleanName };
+}
+
 // ================= BUILT-IN SOVEREIGN COUNTRY DATABASE WITH EXACT CAPITAL COORDINATES =================
-// Format: [numericCode, alpha3, alpha2, name, capital, continentsArray, [capitalLng, capitalLat]]
 const RAW_COUNTRY_DB = [
   // EUROPE
   ['008','ALB','al','Albania','Tirana',['europe'],[19.82,41.33]],
@@ -119,7 +362,7 @@ const RAW_COUNTRY_DB = [
   ['180','COD','cd','DR Congo','Kinshasa',['africa'],[15.32,-4.32]],
   ['384','CIV','ci','Ivory Coast','Yamoussoukro',['africa'],[-5.28,6.82]],
   ['262','DJI','dj','Djibouti','Djibouti',['africa'],[43.15,11.59]],
-  ['818','EGY','eg','Egypt','Cairo',['africa','asia'],[31.24,30.04]],
+  ['818','EGY','eg','Egypt','Cairo',['africa'],[31.24,30.04]],
   ['226','GNQ','gq','Equatorial Guinea','Malabo',['africa'],[8.78,3.75]],
   ['232','ERI','er','Eritrea','Asmara',['africa'],[38.93,15.32]],
   ['748','SWZ','sz','Eswatini','Mbabane',['africa'],[31.13,-26.31]],
@@ -699,32 +942,6 @@ async function fetchGlobalLeaderboard(quizKey, containerEl) {
   }
 }
 
-async function submitScoreToSupabase(quizKey, playerName, accuracyPct, timeSeconds) {
-  const cleanName = playerName.trim().toUpperCase().slice(0, 16) || 'EXPLORER';
-  savePlayerName(cleanName);
-
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${SUPABASE_TABLE}`, {
-    method: 'POST',
-    headers: {
-      apikey: SUPABASE_KEY,
-      Authorization: `Bearer ${SUPABASE_KEY}`,
-      'Content-Type': 'application/json',
-      Prefer: 'return=minimal',
-    },
-    body: JSON.stringify({
-      quiz_id: quizKey,
-      player_name: cleanName,
-      accuracy: accuracyPct,
-      time_seconds: Math.max(1, timeSeconds),
-    }),
-  });
-
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(errText || `HTTP ${res.status}`);
-  }
-}
-
 // ================= GLOBAL STATE =================
 const state = {
   mode: 'explore',
@@ -749,6 +966,7 @@ const state = {
   quiz: {
     active: false,
     finished: false,
+    hasStarted: false,
     scoreSubmitted: false,
     finalScorePct: 100,
     mechanic: 'locate',
@@ -1369,7 +1587,7 @@ function getRecordLabelHtml(quizId, mechanic) {
   const records = loadQuizRecords();
   const rec = records[`${quizId}_${mechanic}`];
   if (!rec) return `<span>NO RECORD</span>`;
-  return `<span class="best-record-pill">★ ${rec.accuracy}% (${formatTime(rec.time)})</span>`;
+  return `<span class="best-record-pill">★ BEST: ${rec.accuracy}% IN ${formatTime(rec.time)}</span>`;
 }
 
 function createQuizTileElement(code, modeBadge, title, desc, countLabel, quizConfig) {
@@ -1538,6 +1756,7 @@ function startQuiz(config) {
   state.quiz = {
     active: true,
     finished: false,
+    hasStarted: false,
     scoreSubmitted: false,
     finalScorePct: 100,
     mechanic,
@@ -1551,7 +1770,7 @@ function startQuiz(config) {
     wrongFlashId: null,
     mistakes: 0,
     correctClicks: 0,
-    startTime: Date.now(),
+    startTime: 0,
     elapsedSeconds: 0,
     timerInterval: null,
   };
@@ -1586,7 +1805,17 @@ function startQuiz(config) {
     flyToCoordinates(config.view.center, config.view.zoom);
   }
 
-  startQuizTimer();
+  stopQuizTimer();
+  const timerEl = document.getElementById('quiz-timer');
+  if (timerEl) timerEl.textContent = '00:00';
+}
+
+function ensureTimerStarted() {
+  if (!state.quiz.hasStarted && state.quiz.active) {
+    state.quiz.hasStarted = true;
+    state.quiz.startTime = Date.now();
+    startQuizTimer();
+  }
 }
 
 function startQuizTimer() {
@@ -1658,6 +1887,8 @@ function handleQuizCountryClick(clickedCountry) {
   const q = state.quiz;
   if (!q.active || q.mechanic !== 'locate' || !q.currentTarget) return;
 
+  ensureTimerStarted();
+
   if (!q.config.targetCountryIds.includes(clickedCountry.id)) {
     showFeedbackToast(`${clickedCountry.name.toUpperCase()} IS NOT IN ${q.config.shortTitle}`, '#52525b');
     return;
@@ -1710,6 +1941,8 @@ on('btn-skip-question', 'click', () => {
   const q = state.quiz;
   if (!q.active || q.mechanic !== 'locate' || !q.currentTarget) return;
 
+  ensureTimerStarted();
+
   const skippedCountry = q.currentTarget;
   q.skippedIds.add(skippedCountry.id);
   q.mistakes += 1;
@@ -1730,6 +1963,8 @@ if (typeInputEl) {
   typeInputEl.addEventListener('input', () => {
     const q = state.quiz;
     if (!q.active || q.mechanic !== 'type') return;
+
+    ensureTimerStarted();
 
     const typed = normalizeAnswer(typeInputEl.value);
     if (!typed) return;
@@ -1762,6 +1997,8 @@ if (typeInputEl) {
 on('btn-give-up', 'click', () => {
   const q = state.quiz;
   if (!q.active || q.mechanic !== 'type') return;
+
+  ensureTimerStarted();
 
   q.config.targetCountryIds.forEach((id) => {
     if (!q.completedIds.has(id)) {
@@ -1851,7 +2088,6 @@ function finishQuiz(gaveUp = false) {
     bestBanner.textContent = `★ YOUR PERSONAL BEST: ${bestRecord.accuracy}% IN ${formatTime(bestRecord.time)}`;
   }
 
-  // Prepare Global Leaderboard submission box & load Top 10
   const nameInput = document.getElementById('lb-player-name');
   if (nameInput) nameInput.value = loadSavedPlayerName();
 
@@ -1869,7 +2105,6 @@ function finishQuiz(gaveUp = false) {
   document.getElementById('quiz-results-modal')?.classList.remove('hidden');
 }
 
-// Submit Score to Global Leaderboard Button
 on('btn-submit-lb', 'click', async () => {
   const q = state.quiz;
   if (!q.config || q.scoreSubmitted) return;
@@ -1885,22 +2120,31 @@ on('btn-submit-lb', 'click', async () => {
     submitBtn.disabled = true;
     submitBtn.textContent = 'POSTING...';
   }
-  if (statusEl) statusEl.textContent = 'UPLOADING TO GLOBAL INDEX...';
+  if (statusEl) {
+    statusEl.style.color = 'var(--ink-muted)';
+    statusEl.textContent = 'VALIDATING & UPLOADING...';
+  }
 
   try {
     await submitScoreToSupabase(recordKey, playerName, q.finalScorePct, q.elapsedSeconds);
     q.scoreSubmitted = true;
     if (submitBtn) submitBtn.textContent = '✓ POSTED';
-    if (statusEl) statusEl.textContent = 'SCORE PUBLISHED TO GLOBAL LEADERBOARD!';
+    if (statusEl) {
+      statusEl.style.color = 'var(--quiz-correct)';
+      statusEl.textContent = 'SCORE PUBLISHED TO GLOBAL LEADERBOARD!';
+    }
     fetchGlobalLeaderboard(recordKey, document.getElementById('results-lb-list'));
   } catch (err) {
     console.error('Failed to submit score:', err);
     if (submitBtn) {
       submitBtn.disabled = false;
-      submitBtn.textContent = 'RETRY POST ↗';
+      submitBtn.textContent = 'POST SCORE ↗';
     }
     if (statusEl) {
-      statusEl.textContent = 'ERROR: MAKE SURE RLS IS UNCHECKED ON SUPABASE TABLE.';
+      statusEl.style.color = 'var(--quiz-wrong)';
+      statusEl.textContent = err.isValidationError
+        ? err.message
+        : 'ERROR: UNABLE TO POST SCORE.';
     }
   }
 });
