@@ -229,7 +229,7 @@ function validatePlayerName(rawInput) {
       if (words.includes(badWord) || deLeeted === badWord) {
         return {
           valid: false,
-          reason: 'NAME CONTAINS RESTRICTED LANGUAGE. CHOOSE ANOTHER ALIAS.',
+          reason: 'NAME CONTAINS RESTRICTED LANGUAGE.',
         };
       }
     } else if (
@@ -239,7 +239,7 @@ function validatePlayerName(rawInput) {
     ) {
       return {
         valid: false,
-        reason: 'NAME CONTAINS RESTRICTED LANGUAGE. CHOOSE ANOTHER ALIAS.',
+        reason: 'NAME CONTAINS RESTRICTED LANGUAGE.',
       };
     }
   }
@@ -247,7 +247,7 @@ function validatePlayerName(rawInput) {
   return { valid: true, cleanName };
 }
 
-// ================= BUILT-IN SOVEREIGN COUNTRY DATABASE WITH EXACT CAPITAL COORDINATES =================
+// ================= BUILT-IN SOVEREIGN COUNTRY DATABASE =================
 const RAW_COUNTRY_DB = [
   // EUROPE
   ['008','ALB','al','Albania','Tirana',['europe'],[19.82,41.33]],
@@ -362,7 +362,7 @@ const RAW_COUNTRY_DB = [
   ['180','COD','cd','DR Congo','Kinshasa',['africa'],[15.32,-4.32]],
   ['384','CIV','ci','Ivory Coast','Yamoussoukro',['africa'],[-5.28,6.82]],
   ['262','DJI','dj','Djibouti','Djibouti',['africa'],[43.15,11.59]],
-  ['818','EGY','eg','Egypt','Cairo',['africa'],[31.24,30.04]],
+  ['818','EGY','eg','Egypt','Cairo',['africa','asia'],[31.24,30.04]],
   ['226','GNQ','gq','Equatorial Guinea','Malabo',['africa'],[8.78,3.75]],
   ['232','ERI','er','Eritrea','Asmara',['africa'],[38.93,15.32]],
   ['748','SWZ','sz','Eswatini','Mbabane',['africa'],[31.13,-26.31]],
@@ -465,7 +465,6 @@ const MICRO_ISLANDS_AND_STATES = new Set([
   'VAT', 'MCO', 'SMR', 'LIE', 'AND', 'MLT', 'LUX', 'CYP',
 ]);
 
-// ================= EDUCATIONAL GEOGRAPHICAL SUBREGIONS DATABASE =================
 const SUBREGIONS_DB = [
   {
     id: 'caribbean',
@@ -613,7 +612,6 @@ const SUBREGIONS_DB = [
   },
 ];
 
-// ================= INTERNATIONAL ORGANISATIONS DATABASE =================
 const ORGANISATIONS_DB = [
   {
     id: 'eu',
@@ -768,7 +766,7 @@ function normalizeAnswer(str) {
     .trim();
 }
 
-// ================= PERSISTENT STORAGE (LOCALSTORAGE + COOKIE + WINDOW.NAME VAULT) =================
+// ================= PERSISTENT STORAGE =================
 const STORAGE_KEYS = {
   PALETTE: 'terra_palette_pref',
   RECORDS: 'terra_quiz_records_v1',
@@ -939,6 +937,39 @@ async function fetchGlobalLeaderboard(quizKey, containerEl) {
   } catch (err) {
     console.error('Leaderboard fetch error:', err);
     containerEl.innerHTML = `<div class="lb-empty">UNABLE TO LOAD LEADERBOARD // CHECK TABLE SETUP</div>`;
+  }
+}
+
+async function submitScoreToSupabase(quizKey, playerName, accuracyPct, timeSeconds) {
+  const check = validatePlayerName(playerName);
+  if (!check.valid) {
+    const err = new Error(check.reason);
+    err.isValidationError = true;
+    throw err;
+  }
+
+  const cleanName = check.cleanName;
+  savePlayerName(cleanName);
+
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${SUPABASE_TABLE}`, {
+    method: 'POST',
+    headers: {
+      apikey: SUPABASE_KEY,
+      Authorization: `Bearer ${SUPABASE_KEY}`,
+      'Content-Type': 'application/json',
+      Prefer: 'return=minimal',
+    },
+    body: JSON.stringify({
+      quiz_id: quizKey,
+      player_name: cleanName,
+      accuracy: accuracyPct,
+      time_seconds: Math.max(1, timeSeconds),
+    }),
+  });
+
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(errText || `HTTP ${res.status}`);
   }
 }
 
