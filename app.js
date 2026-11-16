@@ -15,7 +15,7 @@ const BLOCKED_NAME_ROOTS = [
   'cunt', 'cunts', 'cunting',
   'dick', 'dicks', 'dickhead', 'dickwad',
   'cock', 'cocks', 'cockhead', 'cocksucker',
-  'pussy', 'pussies', 'puss','cockandballtorture','coc&balltorture','coc&balltortur',
+  'pussy', 'pussies', 'puss','cockandballtorture','coc&balltorture','coc&balltortur','coc',
   'asshole', 'arsehole', 'asshat', 'arse',
   'bastard', 'bastards', 'bstrd',
   'slut', 'sluts', 'whore', 'whores',
@@ -26,7 +26,7 @@ const BLOCKED_NAME_ROOTS = [
   'jackass', 'dumbass', 'dipshit',
   'shithead', 'fuckwit', 'dumbfuck',
   'scumbag', 'shitbag', 'fuckface',
-
+  
   // ==========================================
   // SEXUAL / ANATOMICAL / EXPLICIT TERMS
   // ==========================================
@@ -73,12 +73,12 @@ const BLOCKED_NAME_ROOTS = [
   'terrorist', 'terrorism',
   'jihadist', 'jihad',
   'neo-nazi', 'neonazi',
-  'genocide', 'ethniccleansing',
+  'genocide', 'ethniccleansing', 'Kneegro', 'negro', 'knee grow', 'nigro', 'ngiger', 'niger','ninger','coq', 'phat','scrotum','scrowtum',
 
   // ==========================================
   // VIOLENCE / ABUSE / SELF-HARM
   // ==========================================
-  'rape', 'rapist', 'raping',
+  'rape', 'rapist', 'raping','rhape', 
   'pedo', 'paedo', 'pedophile', 'paedophile',
   'molest', 'molester', 'molestation',
   'incest', 'incestuous',
@@ -156,6 +156,9 @@ const BLOCKED_NAME_ROOTS = [
 
   // Jeffrey Epstein
   'jeffreyepstein',
+  'jeffrey',
+  'jefree',
+  'gefri',
   'jeffrey_epstein',
   'epstein',
   'ghislaine maxwell',
@@ -191,63 +194,126 @@ const BLOCKED_NAME_ROOTS = [
 
 
 
+// ================= ADVANCED NAME NORMALIZATION =================
+
+function normalizeNameForFilter(input) {
+  return String(input || '')
+    .normalize('NFKD')
+    .toLowerCase()
+
+    // Common number substitutions
+    .replace(/0/g, 'o')
+    .replace(/1/g, 'i')
+    .replace(/3/g, 'e')
+    .replace(/4/g, 'a')
+    .replace(/5/g, 's')
+    .replace(/7/g, 't')
+    .replace(/8/g, 'b')
+    .replace(/@/g, 'a')
+    .replace(/\$/g, 's')
+
+    // Remove accents
+    .replace(/[\u0300-\u036f]/g, '')
+
+    // Remove ALL spaces, punctuation and separators
+    .replace(/[^a-z0-9]/g, '');
+}
+
+
+// ================= ADVANCED PLAYER NAME VALIDATION =================
+
 function validatePlayerName(rawInput) {
-  const trimmed = (rawInput || '').trim();
-  if (!trimmed) return { valid: true, cleanName: 'EXPLORER' };
+
+  const trimmed = String(rawInput || '').trim();
+
+  if (!trimmed) {
+    return {
+      valid: true,
+      cleanName: 'EXPLORER'
+    };
+  }
+
+  // Reject oversized input rather than silently truncating it
+  if (trimmed.length > 16) {
+    return {
+      valid: false,
+      reason: 'NAME MUST NOT EXCEED 16 CHARACTERS.'
+    };
+  }
+
+  // Only permit standard characters
+  if (!/^[a-zA-Z0-9 _-]+$/.test(trimmed)) {
+    return {
+      valid: false,
+      reason: 'NAME CONTAINS INVALID CHARACTERS.'
+    };
+  }
 
   const cleanName = trimmed
     .toUpperCase()
-    .replace(/[^A-Z0-9 _-]/g, '')
     .replace(/\s+/g, ' ')
-    .trim()
-    .slice(0, 16);
+    .trim();
 
   if (cleanName.length < 2) {
     return {
       valid: false,
-      reason: 'NAME MUST BE AT LEAST 2 LETTERS OR NUMBERS.',
+      reason: 'NAME MUST BE AT LEAST 2 CHARACTERS.'
     };
   }
 
-  const deLeeted = trimmed
-    .toLowerCase()
-    .replace(/0/g, 'o')
-    .replace(/1|!|\|/g, 'i')
-    .replace(/3/g, 'e')
-    .replace(/4|@/g, 'a')
-    .replace(/5|\$/g, 's')
-    .replace(/7/g, 't')
-    .replace(/8/g, 'b')
-    .replace(/[^a-z]/g, '');
+  // Multiple normalization passes
+  const normalized = normalizeNameForFilter(trimmed);
 
-  const collapsed = deLeeted.replace(/(.)\1{2,}/g, '$1$1');
-  const ultraCollapsed = deLeeted.replace(/(.)\1+/g, '$1');
+  // Catch excessive repeated characters
+  const collapsed = normalized.replace(/(.)\1+/g, '$1');
 
-  for (const badWord of BLOCKED_NAME_ROOTS) {
-    if (badWord.length <= 3) {
-      const words = cleanName.toLowerCase().split(/[\s_-]+/);
-      if (words.includes(badWord) || deLeeted === badWord) {
+  // Combine existing and additional blocked words
+  const allBlockedWords = BLOCKED_NAME_ROOTS;
+
+  for (const word of allBlockedWords) {
+
+    const blocked = normalizeNameForFilter(word);
+
+    if (!blocked) continue;
+
+    // Short words must match complete tokens to avoid
+    // accidentally blocking innocent names.
+    if (blocked.length <= 3) {
+
+      const tokens = trimmed
+        .toLowerCase()
+        .split(/[^a-z0-9]+/)
+        .map(normalizeNameForFilter);
+
+      if (tokens.includes(blocked)) {
         return {
           valid: false,
-          reason: 'NAME CONTAINS RESTRICTED LANGUAGE.',
+          reason: 'NAME CONTAINS RESTRICTED LANGUAGE. CHOOSE ANOTHER ALIAS.'
         };
       }
-    } else if (
-      deLeeted.includes(badWord) ||
-      collapsed.includes(badWord) ||
-      ultraCollapsed.includes(badWord)
+
+      continue;
+    }
+
+    // Check original and repeated-character-normalized versions
+    if (
+      normalized.includes(blocked) ||
+      collapsed.includes(blocked)
     ) {
       return {
         valid: false,
-        reason: 'NAME CONTAINS RESTRICTED LANGUAGE.',
+        reason: 'NAME CONTAINS RESTRICTED LANGUAGE. CHOOSE ANOTHER ALIAS.'
       };
     }
   }
 
-  return { valid: true, cleanName };
+  return {
+    valid: true,
+    cleanName
+  };
 }
 
-// ================= BUILT-IN SOVEREIGN COUNTRY DATABASE =================
+// ================= BUILT-IN SOVEREIGN COUNTRY DATABASE WITH EXACT CAPITAL COORDINATES =================
 const RAW_COUNTRY_DB = [
   // EUROPE
   ['008','ALB','al','Albania','Tirana',['europe'],[19.82,41.33]],
@@ -362,7 +428,7 @@ const RAW_COUNTRY_DB = [
   ['180','COD','cd','DR Congo','Kinshasa',['africa'],[15.32,-4.32]],
   ['384','CIV','ci','Ivory Coast','Yamoussoukro',['africa'],[-5.28,6.82]],
   ['262','DJI','dj','Djibouti','Djibouti',['africa'],[43.15,11.59]],
-  ['818','EGY','eg','Egypt','Cairo',['africa','asia'],[31.24,30.04]],
+  ['818','EGY','eg','Egypt','Cairo',['africa'],[31.24,30.04]],
   ['226','GNQ','gq','Equatorial Guinea','Malabo',['africa'],[8.78,3.75]],
   ['232','ERI','er','Eritrea','Asmara',['africa'],[38.93,15.32]],
   ['748','SWZ','sz','Eswatini','Mbabane',['africa'],[31.13,-26.31]],
@@ -465,6 +531,7 @@ const MICRO_ISLANDS_AND_STATES = new Set([
   'VAT', 'MCO', 'SMR', 'LIE', 'AND', 'MLT', 'LUX', 'CYP',
 ]);
 
+// ================= EDUCATIONAL GEOGRAPHICAL SUBREGIONS DATABASE =================
 const SUBREGIONS_DB = [
   {
     id: 'caribbean',
@@ -612,6 +679,7 @@ const SUBREGIONS_DB = [
   },
 ];
 
+// ================= INTERNATIONAL ORGANISATIONS DATABASE =================
 const ORGANISATIONS_DB = [
   {
     id: 'eu',
@@ -766,7 +834,7 @@ function normalizeAnswer(str) {
     .trim();
 }
 
-// ================= PERSISTENT STORAGE =================
+// ================= PERSISTENT STORAGE (LOCALSTORAGE + COOKIE + WINDOW.NAME VAULT) =================
 const STORAGE_KEYS = {
   PALETTE: 'terra_palette_pref',
   RECORDS: 'terra_quiz_records_v1',
@@ -937,39 +1005,6 @@ async function fetchGlobalLeaderboard(quizKey, containerEl) {
   } catch (err) {
     console.error('Leaderboard fetch error:', err);
     containerEl.innerHTML = `<div class="lb-empty">UNABLE TO LOAD LEADERBOARD // CHECK TABLE SETUP</div>`;
-  }
-}
-
-async function submitScoreToSupabase(quizKey, playerName, accuracyPct, timeSeconds) {
-  const check = validatePlayerName(playerName);
-  if (!check.valid) {
-    const err = new Error(check.reason);
-    err.isValidationError = true;
-    throw err;
-  }
-
-  const cleanName = check.cleanName;
-  savePlayerName(cleanName);
-
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${SUPABASE_TABLE}`, {
-    method: 'POST',
-    headers: {
-      apikey: SUPABASE_KEY,
-      Authorization: `Bearer ${SUPABASE_KEY}`,
-      'Content-Type': 'application/json',
-      Prefer: 'return=minimal',
-    },
-    body: JSON.stringify({
-      quiz_id: quizKey,
-      player_name: cleanName,
-      accuracy: accuracyPct,
-      time_seconds: Math.max(1, timeSeconds),
-    }),
-  });
-
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(errText || `HTTP ${res.status}`);
   }
 }
 
@@ -1299,6 +1334,9 @@ async function loadAllData() {
 
       const projectedCentroid = projection(centroidCoords) || [-999, -999];
       const projectedCapital = projection(capCoords) || [-999, -999];
+      
+      // Strictly identify true microstates to protect mainland country labels
+      const isMicro = MICRO_ISLANDS_AND_STATES.has(id);
 
       return {
         id,
@@ -1315,9 +1353,12 @@ async function loadAllData() {
         coordinates: centroidCoords,
         projectedCentroid,
         projectedCapital,
+        // Lock microstate labels directly below their beacon rings (+14px offset)
+        labelX: isMicro ? projectedCapital[0]  : projectedCentroid[0],
+        labelY: isMicro ? projectedCapital[1] + 1 : projectedCentroid[1],
         area,
         hasPolygon,
-        isSmallTarget: !hasPolygon || MICRO_ISLANDS_AND_STATES.has(id) || area < 5000,
+        isSmallTarget: !hasPolygon || isMicro || area < 5000,
       };
     }).sort((a, b) => a.name.localeCompare(b.name));
 
@@ -1457,14 +1498,15 @@ function initMap() {
     .attr('dy', '-0.65em')
     .text((c) => c.capitals[0]);
 
+  // 5. Country Name Labels (Using pre-calculated coordinates)
   labelLayer
     .selectAll('.country-label')
-    .data(state.countries, (c) => c.id)
+    .data(state.countries, (c) => c.id) // This (c) => c.id key prevents names from swapping!
     .enter()
     .append('text')
     .attr('class', 'country-label')
-    .attr('x', (c) => (c.isSmallTarget ? c.projectedCapital[0] : c.projectedCentroid[0]))
-    .attr('y', (c) => (c.isSmallTarget ? c.projectedCapital[1] - 6 : c.projectedCentroid[1]))
+    .attr('x', (c) => c.labelX)
+    .attr('y', (c) => c.labelY)
     .text((c) => c.name);
 
   updateMapColorsAndVisibility();
@@ -2144,8 +2186,27 @@ on('btn-submit-lb', 'click', async () => {
   const submitBtn = document.getElementById('btn-submit-lb');
   const statusEl = document.getElementById('lb-submit-status');
 
-  const playerName = nameInput?.value.trim() || 'EXPLORER';
+  const validation = validatePlayerName(nameInput?.value);
+
+  if (!validation.valid) {
+  
+    if (statusEl) {
+      statusEl.style.color = 'var(--quiz-wrong)';
+      statusEl.textContent = validation.reason;
+    }
+  
+    return;
+  }
+  
+  const playerName = validation.cleanName;
   const recordKey = `${q.config.id}_${q.mechanic}`;
+  
+  // Save only validated names
+  savePlayerName(playerName);
+  
+  if (nameInput) {
+    nameInput.value = playerName;
+  }
 
   if (submitBtn) {
     submitBtn.disabled = true;
