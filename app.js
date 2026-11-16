@@ -19,7 +19,7 @@ const BLOCKED_SUBSTRING_ROOTS = [
   'footjob', 'rimjob', 'deepthroat', 'gangbang', 'threesome', 'creampie', 'bukkake',
   'masturbat', 'ejaculat', 'sperm', 'bdsm', 'bondage', 'fetish', 'nude', 'naked',
   'onlyfans', 'sexwork', 'prostitut', 'escort', 'hooker', 'stripper', 'penetrator',
-  'straightteeth', 'cockandball', 'cocandball',
+  'straightteeth', 'cockandball', 'cocandball','boni blue','bony blew',
 
   // Racial, Ethnic & Homophobic Slurs (including phonetic bypasses like "knee grow" & "nick uh")
   'nigg', 'nigga', 'nigr', 'negro', 'nigro', 'ngiger', 'ninger', 'kneegrow', 'neegrow',
@@ -493,7 +493,7 @@ const SUBREGIONS_DB = [
     shortName: 'CENTRAL & SOUTH AFRICA',
     name: 'Central & Southern Africa',
     description: 'Congo Basin & Southern African nations',
-    view: { center: [20, -14], zoom: 2.9 },
+    view: { center: [20, -9], zoom: 2.9 },
     members: ['AGO','BWA','CMR','CAF','TCD','COG','COD','GNQ','SWZ','GAB','LSO','NAM','STP','ZAF','ZMB','ZWE'],
   },
   {
@@ -576,7 +576,7 @@ const ORGANISATIONS_DB = [
     shortName: 'G7',
     name: 'Group of Seven (G7)',
     description: '7 advanced IMF economies',
-    view: { center: [10, 38], zoom: 1.4 },
+    view: { center: [12, 38], zoom: 1.4 },
     members: ['CAN','FRA','DEU','ITA','JPN','GBR','USA'],
   },
   {
@@ -597,7 +597,7 @@ const ORGANISATIONS_DB = [
     shortName: 'AU',
     name: 'African Union',
     description: '54 continental member states across Africa',
-    view: { center: [18, 2], zoom: 2.2 },
+    view: { center: [18, 4], zoom: 1.95 },
     members: [
       'DZA','AGO','BEN','BWA','BFA','BDI','CPV','CMR','CAF','TCD','COM','COG','COD',
       'CIV','DJI','EGY','GNQ','ERI','SWZ','ETH','GAB','GMB','GHA','GIN','GNB','KEN',
@@ -630,7 +630,7 @@ const ORGANISATIONS_DB = [
     shortName: 'MERCOSUR',
     name: 'MERCOSUR',
     description: 'Southern Common Market trade bloc',
-    view: { center: [-58, -22], zoom: 2.5 },
+    view: { center: [-58, -17], zoom: 2.3 },
     members: ['ARG','BOL','BRA','PRY','URY','VEN'],
   },
 ];
@@ -908,6 +908,7 @@ const state = {
   showNames: true,
   showCapitals: false,
   showIslands: true,
+  rosterOpen: true,
   currentZoom: 1,
   zoomTier: 0,
   mapInitialized: false,
@@ -953,10 +954,10 @@ const CONTINENT_VIEWS = {
   all: { center: [10, 15], zoom: 1 },
   europe: { center: [15, 54], zoom: 3.3 },
   asia: { center: [90, 32], zoom: 2.0 },
-  africa: { center: [18, 2], zoom: 2.2 },
-  north_america: { center: [-92, 38], zoom: 2.0 },
+  africa: { center: [18, 2], zoom: 2.1 },
+  north_america: { center: [-92, 30], zoom: 2.4 },
   south_america: { center: [-60, -20], zoom: 2.2 },
-  oceania: { center: [148, -24], zoom: 2.5 },
+  oceania: { center: [148, -16], zoom: 2.4 },
 };
 
 // ================= SAFE EVENT HELPER & NAVIGATION =================
@@ -982,6 +983,8 @@ function openExploreAtlas() {
   document.getElementById('quiz-feedback-toast')?.classList.add('hidden');
   document.getElementById('btn-reopen-results')?.classList.add('hidden');
   showScreen('atlas-screen');
+  document.getElementById('btn-quick-restart')?.classList.add('hidden');
+  updateRegionRosterUI();
   updateMapColorsAndVisibility();
 }
 
@@ -1242,7 +1245,7 @@ async function loadAllData() {
         labelY: isMicro ? projectedCapital[1] + 1 : projectedCentroid[1],
         area,
         hasPolygon,
-        isSmallTarget: !hasPolygon || isMicro || area < 5000,
+        isSmallTarget: isMicro,
       };
     }).sort((a, b) => a.name.localeCompare(b.name));
 
@@ -1703,6 +1706,7 @@ function shuffleArray(arr) {
 }
 
 function startQuiz(config) {
+  stopQuizTimer();
   selectCountry(null);
   hideTooltip();
 
@@ -1737,6 +1741,9 @@ function startQuiz(config) {
   document.getElementById('quiz-results-modal')?.classList.add('hidden');
   document.getElementById('quiz-feedback-toast')?.classList.add('hidden');
   document.getElementById('btn-reopen-results')?.classList.add('hidden');
+  document.getElementById('btn-quick-restart')?.classList.remove('hidden');
+  document.getElementById('region-roster-panel')?.classList.add('hidden');
+  document.getElementById('btn-toggle-roster')?.classList.add('hidden');
 
   const locateBox = document.getElementById('quiz-locate-box');
   const typeBox = document.getElementById('quiz-type-box');
@@ -1780,6 +1787,7 @@ function startQuizTimer() {
   const timerEl = document.getElementById('quiz-timer');
   if (timerEl) timerEl.textContent = '00:00';
   state.quiz.timerInterval = setInterval(() => {
+    if (!state.quiz.hasStarted || !state.quiz.startTime) return;
     state.quiz.elapsedSeconds = Math.floor((Date.now() - state.quiz.startTime) / 1000);
     if (timerEl) timerEl.textContent = formatTime(state.quiz.elapsedSeconds);
   }, 500);
@@ -2164,8 +2172,13 @@ function hideTooltip() {
 }
 
 function selectCountry(country) {
+
   state.selectedCountry = country;
   updateMapColorsAndVisibility();
+
+  document.querySelectorAll('.roster-item').forEach((el) => {
+    el.classList.toggle('selected', Boolean(country && el.dataset.iso === country.id));
+  });
 
   const panel = document.getElementById('country-info-panel');
   if (!panel) return;
@@ -2245,6 +2258,7 @@ on('btn-focus-country', 'click', () => {
 on('continent-filter', 'change', (e) => {
   state.activeFilter = e.target.value;
   updateMapColorsAndVisibility();
+  updateRegionRosterUI();
 
   if (state.activeFilter.startsWith('org:')) {
     const org = state.orgsById.get(state.activeFilter.slice(4));
@@ -2255,6 +2269,105 @@ on('continent-filter', 'change', (e) => {
   } else {
     const view = CONTINENT_VIEWS[state.activeFilter];
     if (view) flyToCoordinates(view.center, view.zoom);
+  }
+});
+
+function getActiveFilterTitle() {
+  if (state.activeFilter === 'all') return '';
+  if (state.activeFilter.startsWith('org:')) {
+    const org = state.orgsById.get(state.activeFilter.slice(4));
+    return org ? org.name.toUpperCase() : 'ORGANISATION';
+  }
+  if (state.activeFilter.startsWith('sub:')) {
+    const sub = state.subregionsById.get(state.activeFilter.slice(4));
+    return sub ? sub.name.toUpperCase() : 'SUBREGION';
+  }
+  return (CONTINENT_NAMES[state.activeFilter] || 'REGION').toUpperCase();
+}
+
+function updateRegionRosterUI() {
+  const panel = document.getElementById('region-roster-panel');
+  const toggleBtn = document.getElementById('btn-toggle-roster');
+  const listEl = document.getElementById('roster-list');
+  if (!panel || !toggleBtn || !listEl) return;
+
+  // Hide completely during quizzes or when viewing 'all' (Whole World)
+  if (state.mode !== 'explore' || state.activeFilter === 'all') {
+    panel.classList.add('hidden');
+    toggleBtn.classList.add('hidden');
+    return;
+  }
+
+  // Show the bottom-right toggle icon
+  toggleBtn.classList.remove('hidden');
+  toggleBtn.classList.toggle('active', state.rosterOpen);
+
+  const members = state.countries.filter((c) => isCountryInActiveFilter(c));
+  document.getElementById('roster-title').textContent = getActiveFilterTitle();
+  document.getElementById('roster-count').textContent = String(members.length);
+
+  const catTag = document.getElementById('roster-category-tag');
+  if (catTag) {
+    catTag.textContent = state.activeFilter.startsWith('org:')
+      ? 'MEMBER STATES'
+      : state.activeFilter.startsWith('sub:')
+      ? 'SUBREGION STATES'
+      : 'CONTINENTAL STATES';
+  }
+
+  listEl.innerHTML = '';
+  members.forEach((country) => {
+    const row = document.createElement('div');
+    row.className = 'roster-item';
+    row.dataset.iso = country.id;
+    if (state.selectedCountry && state.selectedCountry.id === country.id) {
+      row.classList.add('selected');
+    }
+    row.innerHTML = `
+      <div class="roster-item-left">
+        <img src="https://flagcdn.com/w40/${country.alpha2}.png" alt="" />
+        <span>${country.name}</span>
+      </div>
+      <span class="roster-item-cap">${country.capitals[0] || country.id}</span>
+    `;
+    row.addEventListener('click', () => {
+      focusOnCountry(country);
+    });
+    listEl.appendChild(row);
+  });
+
+  if (state.rosterOpen) {
+    panel.classList.remove('hidden');
+  } else {
+    panel.classList.add('hidden');
+  }
+}
+
+on('btn-toggle-roster', 'click', () => {
+  state.rosterOpen = !state.rosterOpen;
+  updateRegionRosterUI();
+});
+
+on('btn-quick-restart', 'click', () => {
+  if (state.mode === 'quiz' && state.quiz.config) {
+    startQuiz(state.quiz.config);
+  }
+});
+
+window.addEventListener('keydown', (e) => {
+  if (state.mode !== 'quiz' || !state.quiz.config) return;
+  if (document.activeElement?.id === 'lb-player-name') return;
+
+  const isAltR = e.altKey && (e.key === 'r' || e.key === 'R');
+  const isPlainRInLocateMode =
+    state.quiz.mechanic === 'locate' &&
+    !e.ctrlKey &&
+    !e.metaKey &&
+    (e.key === 'r' || e.key === 'R');
+
+  if (isAltR || isPlainRInLocateMode) {
+    e.preventDefault();
+    startQuiz(state.quiz.config);
   }
 });
 
@@ -2293,6 +2406,7 @@ on('btn-zoom-reset', 'click', () => {
   const filterEl = document.getElementById('continent-filter');
   if (filterEl) filterEl.value = 'all';
   selectCountry(null);
+  updateRegionRosterUI();
   flyToCoordinates([10, 15], 1);
 });
 
