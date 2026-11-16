@@ -3,314 +3,160 @@ const SUPABASE_URL = 'https://mjohiguvebbqfrhfqmrc.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_SG0jn8CdXYeUT2m6pXUyZQ_P288ut6Z';
 const SUPABASE_TABLE = 'leaderboard';
 
-// ================= PROFANITY & NAME VALIDATION FILTER =================
+// ================= ULTIMATE COMBINED PROFANITY & ANTI-EXPLOIT FILTER =================
 
-const BLOCKED_NAME_ROOTS = [
-  // ==========================================
-  // ENGLISH PROFANITY & SWEAR WORDS
-  // ==========================================
-  'fuck', 'fuk', 'fck', 'fcker', 'fucker', 'fucking', 'fucked',
-  'shit', 'shat', 'shitty', 'bullshit', 'horseshit',
-  'bitch', 'btch', 'bitches', 'bitchass',
-  'cunt', 'cunts', 'cunting',
-  'dick', 'dicks', 'dickhead', 'dickwad',
-  'cock', 'cocks', 'cockhead', 'cocksucker',
-  'pussy', 'pussies', 'puss','cockandballtorture','coc&balltorture','coc&balltortur','coc',
-  'asshole', 'arsehole', 'asshat', 'arse',
-  'bastard', 'bastards', 'bstrd',
-  'slut', 'sluts', 'whore', 'whores',
-  'skank', 'twat', 'wank', 'wanker',
-  'prick', 'douche', 'douchebag',
-  'motherfucker', 'mofo', 'mfkr',
-  'sonofabitch', 'sob',
-  'jackass', 'dumbass', 'dipshit',
-  'shithead', 'fuckwit', 'dumbfuck',
-  'scumbag', 'shitbag', 'fuckface',
-  
-  // ==========================================
-  // SEXUAL / ANATOMICAL / EXPLICIT TERMS
-  // ==========================================
-  'penis', 'vagina', 'boob', 'boobs',
-  'tits', 'titt', 'titjob',
-  'cum', 'cumming', 'jizz', 'semen',
-  'dildo', 'vibrator', 'fleshlight',
-  'porn', 'porno', 'pornhub', 'hentai',
-  'horny', 'milf', 'dilf',
-  'orgasm', 'orgy', 'blowjob', 'handjob',
-  'footjob', 'rimjob', 'anal',
-  'deepthroat', 'gangbang', 'threesome',
-  'masturbat', 'masturbation',
-  'ejaculat', 'sperm',
-  'bdsm', 'bondage', 'fetish',
-  'nudes', 'nude', 'naked',
-  'onlyfans', 'sexwork', 'prostitut',
-  'escort', 'hooker', 'stripper','teeth','straight-teeth',
+// 1. SUBSTRING ROOTS: Blocked anywhere inside a name (even if combined with other letters)
+const BLOCKED_SUBSTRING_ROOTS = [
+  // English Profanity & Anatomy Roots
+  'fuck', 'fuk', 'fck', 'phuck', 'phuk', 'shit', 'shat', 'bitch', 'btch', 'biatch',
+  'cunt', 'kunt', 'dick', 'dck', 'cock', 'coq', 'koq', 'phatcoq', 'pussy', 'puss',
+  'asshole', 'arsehole', 'asshat', 'bastard', 'bstrd', 'slut', 'whore', 'skank',
+  'twat', 'wank', 'prick', 'douche', 'mofo', 'mfkr', 'sonofabitch', 'dumbass', 'jackass',
+  'penis', 'peen', 'penpen', 'erect', 'boner', 'throbb', 'vagina', 'boob', 'tits', 'titt',
+  'scrotum', 'scrowtum', 'scrot', 'skrotum', 'balls', 'ballz', 'nutsack', 'testic',
+  'cum', 'kumm', 'jizz', 'semen', 'smegma', 'dildo', 'vibrator', 'fleshlight',
+  'porn', 'hentai', 'horny', 'milf', 'dilf', 'orgasm', 'orgy', 'blowjob', 'handjob',
+  'footjob', 'rimjob', 'deepthroat', 'gangbang', 'threesome', 'creampie', 'bukkake',
+  'masturbat', 'ejaculat', 'sperm', 'bdsm', 'bondage', 'fetish', 'nude', 'naked',
+  'onlyfans', 'sexwork', 'prostitut', 'escort', 'hooker', 'stripper', 'penetrator',
+  'straightteeth', 'cockandball', 'cocandball',
 
-  // ==========================================
-  // RACIAL / ETHNIC / HOMOPHOBIC SLURS
-  // ==========================================
-  'nigg', 'nigga', 'nigger', 'nigr',
-  'fagg', 'fagot', 'faggot',
-  'dyke', 'tranny', 'shemale',
-  'retard', 'rtrd', 'retarded',
-  'spic', 'chink', 'kike', 'gook',
-  'wetback', 'coon', 'raghead',
-  'towelhead', 'cracker', 'honky',
-  'beaner', 'wop', 'zipperhead',
-  'darkie', 'paki', 'gringo',
+  // Racial, Ethnic & Homophobic Slurs (including phonetic bypasses like "knee grow" & "nick uh")
+  'nigg', 'nigga', 'nigr', 'negro', 'nigro', 'ngiger', 'ninger', 'kneegrow', 'neegrow',
+  'nikka', 'nickuh', 'nikuh', 'nickga', 'nikga', 'nickgur', 'nikgur', 'niglet', 'nygga', 'niqqa',
+  'fagg', 'fagot', 'dyke', 'tranny', 'shemale', 'retard', 'rtrd',
+  'chink', 'kike', 'gook', 'wetback', 'raghead', 'towelhead', 'cracker', 'honky',
+  'beaner', 'zipperhead', 'darkie', 'gringo',
 
-  // ==========================================
-  // HATE SPEECH / EXTREMISM
-  // ==========================================
-  'hitler', 'adolfhitler',
-  'nazi', 'nazism', 'nazis',
-  'heilhitler', 'siegheil',
-  'aryanbrotherhood',
-  'whitepower', 'whitesupremacy',
-  'kkk', 'ku klux klan',
-  'isis', 'isil', 'daesh',
-  'alqaeda', 'taliban',
-  'terrorist', 'terrorism',
-  'jihadist', 'jihad',
-  'neo-nazi', 'neonazi',
-  'genocide', 'ethniccleansing', 'Kneegro', 'negro', 'knee grow', 'nigro', 'ngiger', 'niger','ninger','coq', 'phat','scrotum','scrowtum',
+  // Extremism, Hate Speech & Terror
+  'hitler', 'nazi', 'heilhitler', 'siegheil', 'aryanbrother', 'whitepower', 'whitesupremac',
+  'kukluxklan', 'daesh', 'alqaeda', 'taliban', 'terrorist', 'terrorism', 'jihad',
+  'genocide', 'ethniccleans',
 
-  // ==========================================
-  // VIOLENCE / ABUSE / SELF-HARM
-  // ==========================================
-  'rape', 'rapist', 'raping','rhape', 
-  'pedo', 'paedo', 'pedophile', 'paedophile',
-  'molest', 'molester', 'molestation',
-  'incest', 'incestuous',
-  'suicide', 'suicidal',
-  'kys', 'killyourself',
-  'murder', 'murderer',
-  'torture', 'necrophil',
-  'childabuse', 'childmolest','edp445','balls','bals','penetrator','molestor','kids','touch',
+  // Violence, Abuse & Self-Harm
+  'rape', 'rapist', 'raping', 'rhape', 'pedo', 'paedo', 'molest', 'incest',
+  'suicide', 'suicidal', 'killyourself', 'murder', 'torture', 'necrophil',
+  'childabuse', 'childmolest', 'touchkids', 'kidstouch', 'edp445',
 
-  // ==========================================
-  // HINDI / HINGLISH PROFANITY
-  // ==========================================
-  'chutiya', 'chutiye', 'chutiyapa',
-  'chut', 'chutmar',
-  'madarchod', 'madarchut',
-  'bhenchod', 'behenchod', 'bhenchodd',
-  'bhencho', 'behencho',
-  'bsdk', 'bhosdike', 'bhosdi',
-  'bhosda', 'bhosad', 'bhosadike',
-  'gandu', 'gaand', 'gand',
-  'gaandfat', 'gandmasti',
-  'randi', 'randibaaz', 'randwa',
-  'lund', 'lundchoos', 'lundfakir',
-  'lauda', 'laude', 'lavda', 'lavde',
-  'lodu', 'lode', 'lulli',
-  'harami', 'haramkhor',
-  'kamina', 'kamine', 'kameena',
-  'kutte', 'kutta', 'kutti',
-  'suar', 'suar ki aulad',
-  'saala', 'saali', 'sala',
-  'bawaseer',
-  'jhant', 'jhaant',
-  'chodu', 'chod', 'chodna',
-  'chodumal',
-  'mc', 'bc',
+  // Hindi / Hinglish Profanity & Romanized Variants
+  'chutiya', 'chutiye', 'choot', 'chutmar', 'madarchod', 'madarchut', 'maderchod', 'madrchod',
+  'bhenchod', 'behenchod', 'bhencho', 'behencho', 'banchod', 'bhenchot', 'behnchod',
+  'bsdk', 'bhosdi', 'bhosda', 'bhosad', 'gandu', 'gaand', 'gandmasti', 'gaandfat',
+  'randi', 'raand', 'randwa', 'lund', 'lauda', 'laude', 'lavda', 'lavde', 'lodu', 'lode', 'lulli',
+  'harami', 'haramkhor', 'kamina', 'kamine', 'kameena', 'kutta', 'kutte', 'kutti',
+  'suarkiaulad', 'bawaseer', 'jhant', 'jhaant', 'jhaat', 'chodu', 'chodna', 'chodumal', 'tatte', 'tatta',
 
-  // ==========================================
-  // HINDI / HINGLISH ROMANIZED VARIATIONS
-  // ==========================================
-  'ch0tiya', 'ch0tiye',
-  'm4darchod', 'm4darch0d',
-  'bhench0d', 'b3henchod',
-  'bh0sdike', 'bh0sdi',
-  'g4ndu', 'g4nd',
-  'l4uda', 'l4vda',
-  'r4ndi',
-  'ch00t', 'ch00tiya',
-  'maderchod', 'madrchod',
-  'bhenchot', 'behnchod',
-
-  // ==========================================
-  // CONTROVERSIAL PERSONALITIES / INTERNET FIGURES
-  // ==========================================
-  // Bonnie Blue
-  'bonnieblue',
-  'bonnie_blue',
-  'bonnie.blue',
-  'bonnyblew',
-  'bonnieblew',
-
-
-  // Charlie Kirk
-  'charliekirk',
-  'charlie_kirk',
-  'charlie.kirk',
-
-  // Andrew Tate
-  'andrewtate',
-  'andrew_tate',
-  'cobratate',
-  'tristantate',
-
-  // Adolf Hitler
-  'adolfhitler',
-
-  // Jeffrey Epstein
-  'jeffreyepstein',
-  'jeffrey',
-  'jefree',
-  'gefri',
-  'jeffrey_epstein',
-  'epstein',
-  'ghislaine maxwell',
-
-  // Osama Bin Laden
-  'osamabinladen',
-  'binladen',
-  'netanyahu',
-  'netanyahoo',
-  'n8anyahu',
-  'n8anyahoo',
-  'big yahu',
-  'yahu',
-
-  // Other controversial internet personalities
-  'nikocadoavocado',
-  'sneako',
-  'freshandfit',
-  'nickfuentes',
-
-  // ==========================================
-  // ADDITIONAL INTERNET SLANG / BYPASS TERMS
-  // ==========================================
-  'kys',
-  'kms',
-  'stfu',
-  'gtfo',
-  'wtf',
-  'fml',
-  'pos',
-  'sob',
+  // Controversial Figures & Inside Jokes
+  'bonnieblue', 'bonnyblew', 'bonnieblew', 'charliekirk', 'andrewtate', 'cobratate', 'tristantate',
+  'epstein', 'jeffrey', 'jefree', 'gefri', 'ghislaine', 'osama', 'binladen',
+  'netanyahu', 'netanyahoo', 'n8anyahu', 'n8anyahoo', 'bigyahu',
+  'nikocado', 'sneako', 'freshandfit', 'nickfuentes', 'diddy', 'stalin', 'mussolini'
 ];
 
+// 2. EXACT TOKEN WORDS: Blocked if used as a standalone word (e.g. "MC SAHAS" or "PHAT"),
+//    preventing false positives on normal names like "McDonald", "Achyut", or "Salazar".
+const BLOCKED_EXACT_TOKENS = new Set([
+  'mc', 'bc', 'sob', 'pos', 'kys', 'kms', 'stfu', 'gtfo', 'wtf', 'fml', 'kkk', 'isis', 'isil',
+  'coc', 'cok', 'kok', 'dik', 'ass', 'arse', 'anal', 'anus', 'fag', 'fap', 'goon',
+  'chut', 'chod', 'gand', 'loda', 'muth', 'suar', 'sala', 'saala', 'saali',
+  'phat', 'bals', 'kids', 'touch', 'teeth', 'yahu', 'coon', 'spic', 'paki', 'wop', 'niger'
+]);
 
-
-// ================= ADVANCED NAME NORMALIZATION =================
-
+// Standard Leetspeak + Accent Normalization
 function normalizeNameForFilter(input) {
   return String(input || '')
     .normalize('NFKD')
     .toLowerCase()
-
-    // Common number substitutions
     .replace(/0/g, 'o')
-    .replace(/1/g, 'i')
+    .replace(/1|!|\|/g, 'i')
     .replace(/3/g, 'e')
-    .replace(/4/g, 'a')
-    .replace(/5/g, 's')
+    .replace(/4|@/g, 'a')
+    .replace(/5|\$/g, 's')
     .replace(/7/g, 't')
     .replace(/8/g, 'b')
-    .replace(/@/g, 'a')
-    .replace(/\$/g, 's')
-
-    // Remove accents
     .replace(/[\u0300-\u036f]/g, '')
-
-    // Remove ALL spaces, punctuation and separators
     .replace(/[^a-z0-9]/g, '');
 }
 
+// Phonetic Sound-Alike Normalization (catches "knee grow", "phat coq", "scrowtum", "rhape")
+function normalizePhonetics(input) {
+  return normalizeNameForFilter(input)
+    .replace(/ph/g, 'f')
+    .replace(/ck|q/g, 'k')
+    .replace(/kn/g, 'n')
+    .replace(/wr/g, 'r')
+    .replace(/rh/g, 'r')
+    .replace(/ow/g, 'o')
+    .replace(/ee/g, 'e')
+    .replace(/[^a-z0-9]/g, '');
+}
 
-// ================= ADVANCED PLAYER NAME VALIDATION =================
+// Pre-compute normalized blocklists once at startup for instant checking
+const PRECOMPUTED_SUBSTRINGS = BLOCKED_SUBSTRING_ROOTS.map((w) => ({
+  norm: normalizeNameForFilter(w),
+  phon: normalizePhonetics(w),
+  collapsed: normalizeNameForFilter(w).replace(/(.)\1+/g, '$1'),
+}));
 
 function validatePlayerName(rawInput) {
-
   const trimmed = String(rawInput || '').trim();
 
   if (!trimmed) {
-    return {
-      valid: true,
-      cleanName: 'EXPLORER'
-    };
+    return { valid: true, cleanName: 'EXPLORER' };
   }
 
-  // Reject oversized input rather than silently truncating it
   if (trimmed.length > 16) {
-    return {
-      valid: false,
-      reason: 'NAME MUST NOT EXCEED 16 CHARACTERS.'
-    };
+    return { valid: false, reason: 'NAME MUST NOT EXCEED 16 CHARACTERS.' };
   }
 
-  // Only permit standard characters
   if (!/^[a-zA-Z0-9 _-]+$/.test(trimmed)) {
-    return {
-      valid: false,
-      reason: 'NAME CONTAINS INVALID CHARACTERS.'
-    };
+    return { valid: false, reason: 'NAME CONTAINS INVALID CHARACTERS.' };
   }
 
-  const cleanName = trimmed
-    .toUpperCase()
-    .replace(/\s+/g, ' ')
-    .trim();
+  const cleanName = trimmed.toUpperCase().replace(/\s+/g, ' ').trim();
 
   if (cleanName.length < 2) {
-    return {
-      valid: false,
-      reason: 'NAME MUST BE AT LEAST 2 CHARACTERS.'
-    };
+    return { valid: false, reason: 'NAME MUST BE AT LEAST 2 CHARACTERS.' };
   }
 
-  // Multiple normalization passes
-  const normalized = normalizeNameForFilter(trimmed);
+  // 1. Check standalone tokens against BLOCKED_EXACT_TOKENS
+  const rawTokens = trimmed
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter(Boolean);
 
-  // Catch excessive repeated characters
-  const collapsed = normalized.replace(/(.)\1+/g, '$1');
-
-  // Combine existing and additional blocked words
-  const allBlockedWords = BLOCKED_NAME_ROOTS;
-
-  for (const word of allBlockedWords) {
-
-    const blocked = normalizeNameForFilter(word);
-
-    if (!blocked) continue;
-
-    // Short words must match complete tokens to avoid
-    // accidentally blocking innocent names.
-    if (blocked.length <= 3) {
-
-      const tokens = trimmed
-        .toLowerCase()
-        .split(/[^a-z0-9]+/)
-        .map(normalizeNameForFilter);
-
-      if (tokens.includes(blocked)) {
-        return {
-          valid: false,
-          reason: 'NAME CONTAINS RESTRICTED LANGUAGE. CHOOSE ANOTHER ALIAS.'
-        };
-      }
-
-      continue;
-    }
-
-    // Check original and repeated-character-normalized versions
-    if (
-      normalized.includes(blocked) ||
-      collapsed.includes(blocked)
-    ) {
+  for (const token of rawTokens) {
+    const normToken = normalizeNameForFilter(token);
+    const collapsedToken = normToken.replace(/(.)\1+/g, '$1');
+    if (BLOCKED_EXACT_TOKENS.has(normToken) || BLOCKED_EXACT_TOKENS.has(collapsedToken)) {
       return {
         valid: false,
-        reason: 'NAME CONTAINS RESTRICTED LANGUAGE. CHOOSE ANOTHER ALIAS.'
+        reason: 'NAME CONTAINS RESTRICTED LANGUAGE. CHOOSE ANOTHER ALIAS.',
       };
     }
   }
 
-  return {
-    valid: true,
-    cleanName
-  };
+  // 2. Check full string (stripped, collapsed, and phonetic) against BLOCKED_SUBSTRING_ROOTS
+  const normalized = normalizeNameForFilter(trimmed);
+  const collapsed = normalized.replace(/(.)\1+/g, '$1');
+  const phonetic = normalizePhonetics(trimmed);
+  const phoneticCollapsed = phonetic.replace(/(.)\1+/g, '$1');
+
+  for (const item of PRECOMPUTED_SUBSTRINGS) {
+    if (
+      normalized.includes(item.norm) ||
+      collapsed.includes(item.collapsed) ||
+      phonetic.includes(item.phon) ||
+      phoneticCollapsed.includes(item.collapsed)
+    ) {
+      return {
+        valid: false,
+        reason: 'NAME CONTAINS RESTRICTED LANGUAGE. CHOOSE ANOTHER ALIAS.',
+      };
+    }
+  }
+
+  return { valid: true, cleanName };
 }
 
 // ================= BUILT-IN SOVEREIGN COUNTRY DATABASE WITH EXACT CAPITAL COORDINATES =================
@@ -794,6 +640,10 @@ const PALETTE_POLYGON_SHADES = {
   obsidian: ['#1e293b', '#263449', '#334155', '#1a2436'],
   blueprint: ['#94b0c7', '#a6bfd4', '#7e9eb8', '#b5cadb'],
   parchment: ['#c5bba8', '#d1c7b5', '#b5aa96', '#c9bfb0'],
+  alpine: ['#9eb2a3', '#b0c2b4', '#899f8f', '#bdcdc1'],
+  monolith: ['#262626', '#303030', '#3d3d3d', '#1f1f1f'],
+  terminal: ['#112a1c', '#183926', '#1f4730', '#0e2217'],
+  kyoto: ['#b0a8b9', '#c2bbc9', '#9c92a6', '#cbc4d1'],
 };
 
 const COUNTRY_ALIASES = {
