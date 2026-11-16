@@ -86,7 +86,7 @@ const BLOCKED_NAME_ROOTS = [
   'kys', 'killyourself',
   'murder', 'murderer',
   'torture', 'necrophil',
-  'childabuse', 'childmolest','edp445',
+  'childabuse', 'childmolest','edp445','balls','bals','penetrator','molestor','kids','touch',
 
   // ==========================================
   // HINDI / HINGLISH PROFANITY
@@ -1007,6 +1007,40 @@ async function fetchGlobalLeaderboard(quizKey, containerEl) {
     containerEl.innerHTML = `<div class="lb-empty">UNABLE TO LOAD LEADERBOARD // CHECK TABLE SETUP</div>`;
   }
 }
+
+
+async function submitScoreToSupabase(quizKey, playerName, accuracyPct, timeSeconds) {
+  const validation = validatePlayerName(playerName);
+  if (!validation.valid) {
+    const err = new Error(validation.reason);
+    err.isValidationError = true;
+    throw err;
+  }
+
+  const url = `${SUPABASE_URL}/rest/v1/${SUPABASE_TABLE}`;
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      apikey: SUPABASE_KEY,
+      Authorization: `Bearer ${SUPABASE_KEY}`,
+      Prefer: 'return=minimal',
+    },
+    body: JSON.stringify({
+      quiz_id: quizKey,
+      player_name: validation.cleanName,
+      accuracy: Math.max(0, Math.min(100, Math.round(Number(accuracyPct) || 0))),
+      time_seconds: Math.max(1, Math.round(Number(timeSeconds) || 1)),
+    }),
+  });
+
+  if (!res.ok) {
+    const errText = await res.text().catch(() => '');
+    throw new Error(`Supabase insert failed (${res.status}): ${errText}`);
+  }
+}
+
 
 // ================= GLOBAL STATE =================
 const state = {
