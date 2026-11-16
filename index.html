@@ -392,6 +392,7 @@
     </button>
 
     <div class="zoom-controls">
+      <button class="zoom-btn restart-quiz-btn hidden" id="btn-quick-restart" title="Instant Restart Quiz (Alt + R)">↻</button>
       <button class="zoom-btn" id="btn-zoom-in" title="Zoom In">+</button>
       <button class="zoom-btn" id="btn-zoom-out" title="Zoom Out">−</button>
       <button class="zoom-btn" id="btn-zoom-reset" title="Reset Map">⟲</button>
@@ -443,6 +444,27 @@
         <button id="btn-focus-country" class="focus-btn">FOCUS REGION</button>
       </div>
     </aside>
+
+    <!-- Bottom-Right Filtered Region / Organisation Member Roster (Explore Mode Only) -->
+    <aside id="region-roster-panel" class="roster-panel hidden">
+      <div class="roster-header">
+        <div>
+          <span class="mono-tag" id="roster-category-tag">SELECTED GROUP</span>
+          <h3 id="roster-title">EUROPEAN UNION</h3>
+        </div>
+        <span class="iso-badge" id="roster-count">27</span>
+      </div>
+      <div id="roster-list" class="roster-list"></div>
+    </aside>
+
+    <!-- Absolute Bottom-Right Toggle Icon for Roster -->
+    <button
+      id="btn-toggle-roster"
+      class="roster-toggle-fab hidden active"
+      title="Show / Hide Group Member List"
+    >
+      ☰
+    </button>
 
     <!-- Quiz Completion Results + Live Global Leaderboard Modal -->
     <div id="quiz-results-modal" class="results-overlay hidden">
