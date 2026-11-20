@@ -1533,6 +1533,90 @@ body, html {
   color: var(--bg-paper);
 }
 
+/* ================= TIMED BLITZ CUSTOM CARD & URGENCY TIMER ================= */
+.custom-blitz-card {
+  margin-top: 20px;
+  border: 1.5px solid var(--ink);
+  background: var(--bg-secondary);
+  padding: 22px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.custom-blitz-info {
+  flex: 1;
+  min-width: 240px;
+}
+
+.custom-blitz-pb {
+  margin-top: 10px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--quiz-correct);
+}
+
+.custom-blitz-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.custom-time-inputs {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.time-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.time-field input {
+  width: 76px;
+  font-family: var(--font-mono);
+  font-size: 18px;
+  font-weight: 700;
+  text-align: center;
+  padding: 8px 6px;
+  border: 1.5px solid var(--ink);
+  background: var(--bg-paper);
+  color: var(--ink);
+  outline: none;
+}
+
+.time-field input:focus {
+  border-color: var(--quiz-correct);
+}
+
+.time-colon {
+  font-family: var(--font-mono);
+  font-size: 20px;
+  font-weight: 700;
+  padding-bottom: 8px;
+}
+
+.custom-blitz-err {
+  color: var(--quiz-wrong);
+  min-height: 14px;
+}
+
+#quiz-timer.timer-urgent {
+  color: var(--quiz-wrong);
+  animation: blitzPulse 0.7s ease-in-out infinite alternate;
+}
+
+@keyframes blitzPulse {
+  from { opacity: 1; }
+  to { opacity: 0.45; }
+}
+
 @media (max-width: 680px) {
   #home-screen, #quiz-select-screen {
     padding: 20px;
