@@ -689,6 +689,7 @@ const STORAGE_KEYS = {
   PALETTE: 'terra_palette_pref',
   RECORDS: 'terra_quiz_records_v1',
   PLAYER_NAME: 'terra_player_name',
+  SFX: 'terra_sfx_enabled',
   WINDOW_PREFIX: 'TERRA_VAULT::',
 };
 
@@ -799,6 +800,115 @@ function saveQuizRecord(quizKey, accuracyPct, timeSeconds, isFullCompletion) {
   }
   return records[quizKey];
 }
+
+// ================= HIGH-QUALITY WEB AUDIO CUE ENGINE =================
+function loadSavedSfxPreference() {
+  try {
+    const ls = localStorage.getItem(STORAGE_KEYS.SFX);
+    if (ls !== null) return ls !== 'false';
+  } catch (_) {}
+  const ck = getPreferenceCookie(STORAGE_KEYS.SFX);
+  if (ck !== null) return ck !== 'false';
+  const vaultVal = readWindowVault().sfxEnabled;
+  return vaultVal !== undefined ? Boolean(vaultVal) : true;
+}
+
+function saveSfxPreference(enabled) {
+  const val = enabled ? 'true' : 'false';
+  try {
+    localStorage.setItem(STORAGE_KEYS.SFX, val);
+  } catch (_) {}
+  setPreferenceCookie(STORAGE_KEYS.SFX, val);
+  writeWindowVault({ sfxEnabled: Boolean(enabled) });
+}
+
+const audioEngine = {
+  ctx: null,
+  masterGain: null,
+  enabled: loadSavedSfxPreference(),
+
+  init() {
+    if (this.ctx) return this.ctx;
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return null;
+
+    const ctx = new AudioCtx();
+    const compressor = ctx.createDynamicsCompressor();
+    compressor.threshold.setValueAtTime(-16, ctx.currentTime);
+    compressor.ratio.setValueAtTime(4, ctx.currentTime);
+
+    const lowpass = ctx.createBiquadFilter();
+    lowpass.type = 'lowpass';
+    lowpass.frequency.setValueAtTime(4200, ctx.currentTime);
+
+    const masterGain = ctx.createGain();
+    masterGain.gain.setValueAtTime(0.24, ctx.currentTime);
+
+    masterGain.connect(lowpass);
+    lowpass.connect(compressor);
+    compressor.connect(ctx.destination);
+
+    this.ctx = ctx;
+    this.masterGain = masterGain;
+    return ctx;
+  },
+
+  playTone(freq, startTime, duration, volume = 1) {
+    const ctx = this.ctx;
+    if (!ctx || !this.masterGain) return;
+
+    // Warm fundamental (sine) + subtle crystalline overtone (triangle, 1 octave up)
+    const oscMain = ctx.createOscillator();
+    const oscHarmonic = ctx.createOscillator();
+    const gainMain = ctx.createGain();
+    const gainHarmonic = ctx.createGain();
+
+    oscMain.type = 'sine';
+    oscMain.frequency.setValueAtTime(freq, startTime);
+
+    oscHarmonic.type = 'triangle';
+    oscHarmonic.frequency.setValueAtTime(freq * 2, startTime);
+
+    // Smooth click-free envelope (fast attack, natural marimba-like decay)
+    gainMain.gain.setValueAtTime(0.0001, startTime);
+    gainMain.gain.linearRampToValueAtTime(volume, startTime + 0.008);
+    gainMain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
+
+    gainHarmonic.gain.setValueAtTime(0.0001, startTime);
+    gainHarmonic.gain.linearRampToValueAtTime(volume * 0.14, startTime + 0.006);
+    gainHarmonic.gain.exponentialRampToValueAtTime(0.0001, startTime + duration * 0.65);
+
+    oscMain.connect(gainMain);
+    oscHarmonic.connect(gainHarmonic);
+    gainMain.connect(this.masterGain);
+    gainHarmonic.connect(this.masterGain);
+
+    oscMain.start(startTime);
+    oscHarmonic.start(startTime);
+    oscMain.stop(startTime + duration + 0.02);
+    oscHarmonic.stop(startTime + duration + 0.02);
+  },
+
+  playCorrect(isFinal = false) {
+    if (!this.enabled) return;
+    try {
+      const ctx = this.init();
+      if (!ctx) return;
+      if (ctx.state === 'suspended') ctx.resume();
+
+      const now = ctx.currentTime + 0.005;
+      // Clean ascending perfect fifth: E5 -> B5
+      this.playTone(659.25, now, 0.18, 0.85);
+      this.playTone(987.77, now + 0.055, isFinal ? 0.34 : 0.24, 1.0);
+
+      // Gentle resolving octave (E6) when the final country completes the quiz
+      if (isFinal) {
+        this.playTone(1318.51, now + 0.115, 0.45, 0.9);
+      }
+    } catch (_) {}
+  },
+};
+
 
 // ================= SUPABASE GLOBAL LEADERBOARD API FUNCTIONS =================
 async function fetchGlobalLeaderboard(quizKey, containerEl) {
@@ -953,7 +1063,7 @@ const CONTINENT_NAMES = {
 const CONTINENT_VIEWS = {
   all: { center: [10, 15], zoom: 1 },
   europe: { center: [15, 54], zoom: 3.3 },
-  asia: { center: [90, 32], zoom: 2.0 },
+  asia: { center: [90, 30], zoom: 1.8 },
   africa: { center: [18, 2], zoom: 2.1 },
   north_america: { center: [-92, 30], zoom: 2.4 },
   south_america: { center: [-60, -20], zoom: 2.2 },
@@ -1867,6 +1977,7 @@ function handleQuizCountryClick(clickedCountry) {
     q.completedIds.add(clickedCountry.id);
     q.correctClicks += 1;
     q.wrongFlashId = null;
+    audioEngine.playCorrect(q.queue.length === 1); 
     document.getElementById('quiz-feedback-toast')?.classList.add('hidden');
     advanceQuizQueue();
   } else {
@@ -1948,6 +2059,8 @@ if (typeInputEl) {
       q.completedIds.add(matchedCountry.id);
       q.correctClicks += 1;
       typeInputEl.value = '';
+      const isFinal = q.completedIds.size === q.totalCount; // <-- Add this line
+      audioEngine.playCorrect(isFinal);                     // <-- Add this line
       showFeedbackToast(`✓ ${matchedCountry.name.toUpperCase()}`, '#10b981');
       updateQuizHUD();
       updateMapColorsAndVisibility();
@@ -2388,6 +2501,22 @@ on('btn-toggle-islands', 'click', (e) => {
   e.currentTarget.classList.toggle('active', state.showIslands);
   updateMapColorsAndVisibility();
 });
+
+function updateSfxButtonUI() {
+  const btn = document.getElementById('btn-toggle-sfx');
+  if (!btn) return;
+  btn.textContent = audioEngine.enabled ? 'SFX: ON' : 'SFX: OFF';
+  btn.classList.toggle('active', audioEngine.enabled);
+}
+
+on('btn-toggle-sfx', 'click', () => {
+  audioEngine.enabled = !audioEngine.enabled;
+  saveSfxPreference(audioEngine.enabled);
+  updateSfxButtonUI();
+  if (audioEngine.enabled) audioEngine.playCorrect(false);
+});
+
+updateSfxButtonUI();
 
 on('btn-zoom-in', 'click', () => {
   svg.transition().duration(250).call(zoomBehavior.scaleBy, 1.5);
