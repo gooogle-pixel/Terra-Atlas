@@ -635,6 +635,23 @@ const ORGANISATIONS_DB = [
   },
 ];
 
+// ================= TIMED BLITZ PRESETS (WORLD SPEEDRUN) =================
+const BLITZ_PRESETS = [
+  { seconds: 60, code: 'BLZ-01', title: '1 Minute Blitz', shortTitle: '1 MIN BLITZ', desc: '60-second sprint — name as many countries as fast as you can.' },
+  { seconds: 120, code: 'BLZ-02', title: '2 Minute Blitz', shortTitle: '2 MIN BLITZ', desc: '120-second speed recall across all 195 sovereign states.' },
+  { seconds: 180, code: 'BLZ-03', title: '3 Minute Blitz', shortTitle: '3 MIN BLITZ', desc: '3-minute pace test — balance speed and steady recall.' },
+  { seconds: 300, code: 'BLZ-05', title: '5 Minute Blitz', shortTitle: '5 MIN BLITZ', desc: 'Classic 5-minute global blitz challenge.' },
+  { seconds: 600, code: 'BLZ-10', title: '10 Minute Blitz', shortTitle: '10 MIN BLITZ', desc: 'Endurance blitz — see how deep into the atlas you can go.' },
+];
+
+function formatBlitzDurationLabel(totalSeconds) {
+  const m = Math.floor(totalSeconds / 60);
+  const s = totalSeconds % 60;
+  if (m > 0 && s > 0) return `${m}M ${s}S`;
+  if (m > 0) return `${m} MIN`;
+  return `${s} SEC`;
+}
+
 const PALETTE_POLYGON_SHADES = {
   swiss: ['#d1d5db', '#cbd5e1', '#9ca3af', '#b6c2cf'],
   obsidian: ['#1e293b', '#263449', '#334155', '#1a2436'],
@@ -915,6 +932,8 @@ async function fetchGlobalLeaderboard(quizKey, containerEl) {
   if (!containerEl) return;
   containerEl.innerHTML = `<div class="lb-empty">FETCHING GLOBAL RANKINGS...</div>`;
 
+  const isBlitz = quizKey.startsWith('blitz-');
+
   try {
     const url = `${SUPABASE_URL}/rest/v1/${SUPABASE_TABLE}?quiz_id=eq.${encodeURIComponent(
       quizKey
@@ -939,7 +958,7 @@ async function fetchGlobalLeaderboard(quizKey, containerEl) {
       <div class="lb-row lb-head">
         <span>RANK</span>
         <span>PLAYER</span>
-        <span style="text-align:right">SCORE</span>
+        <span style="text-align:right">${isBlitz ? 'NAMED' : 'SCORE'}</span>
         <span style="text-align:right">TIME</span>
       </div>
     `;
@@ -948,14 +967,14 @@ async function fetchGlobalLeaderboard(quizKey, containerEl) {
       const safeName = String(r.player_name || 'ANONYMOUS')
         .replace(/[<>&"']/g, '')
         .slice(0, 16);
-      const acc = Number(r.accuracy) || 0;
+      const val = Number(r.accuracy) || 0;
       const secs = Number(r.time_seconds) || 0;
 
       html += `
         <div class="lb-row">
           <span class="lb-rank">#${idx + 1}</span>
           <span class="lb-name">${safeName}</span>
-          <span class="lb-acc">${acc}%</span>
+          <span class="lb-acc">${isBlitz ? val : `${val}%`}</span>
           <span class="lb-time">${formatTime(secs)}</span>
         </div>
       `;
@@ -968,8 +987,7 @@ async function fetchGlobalLeaderboard(quizKey, containerEl) {
   }
 }
 
-
-async function submitScoreToSupabase(quizKey, playerName, accuracyPct, timeSeconds) {
+async function submitScoreToSupabase(quizKey, playerName, scoreValue, timeSeconds) {
   const validation = validatePlayerName(playerName);
   if (!validation.valid) {
     const err = new Error(validation.reason);
@@ -977,6 +995,8 @@ async function submitScoreToSupabase(quizKey, playerName, accuracyPct, timeSecon
     throw err;
   }
 
+  const isBlitz = quizKey.startsWith('blitz-');
+  const maxScore = isBlitz ? Math.max(195, state.countries.length) : 100;
   const url = `${SUPABASE_URL}/rest/v1/${SUPABASE_TABLE}`;
 
   const res = await fetch(url, {
@@ -990,7 +1010,7 @@ async function submitScoreToSupabase(quizKey, playerName, accuracyPct, timeSecon
     body: JSON.stringify({
       quiz_id: quizKey,
       player_name: validation.cleanName,
-      accuracy: Math.max(0, Math.min(100, Math.round(Number(accuracyPct) || 0))),
+      accuracy: Math.max(0, Math.min(maxScore, Math.round(Number(scoreValue) || 0))),
       time_seconds: Math.max(1, Math.round(Number(timeSeconds) || 1)),
     }),
   });
@@ -1031,6 +1051,8 @@ const state = {
     scoreSubmitted: false,
     finalScorePct: 100,
     mechanic: 'locate',
+    timeLimitSeconds: 0,
+    allowLeaderboard: true,
     config: null,
     queue: [],
     currentTarget: null,
@@ -1158,28 +1180,36 @@ on('btn-clear-records', 'click', () => {
   renderQuizCatalog();
 });
 
-on('btn-mode-locate', 'click', () => {
-  state.selectedQuizMechanic = 'locate';
-  document.getElementById('btn-mode-locate')?.classList.add('active');
-  document.getElementById('btn-mode-type')?.classList.remove('active');
-  document.getElementById('mode-description-text').textContent =
-    'Click the prompted country directly on the interactive globe map.';
-  renderQuizCatalog();
-});
+function setQuizMechanic(mechanic) {
+  state.selectedQuizMechanic = mechanic;
+  document.getElementById('btn-mode-locate')?.classList.toggle('active', mechanic === 'locate');
+  document.getElementById('btn-mode-type')?.classList.toggle('active', mechanic === 'type');
+  document.getElementById('btn-mode-blitz')?.classList.toggle('active', mechanic === 'blitz');
 
-on('btn-mode-type', 'click', () => {
-  state.selectedQuizMechanic = 'type';
-  document.getElementById('btn-mode-type')?.classList.add('active');
-  document.getElementById('btn-mode-locate')?.classList.remove('active');
-  document.getElementById('mode-description-text').textContent =
-    'Type as many countries as you can remember. Give up anytime to reveal missed countries in red.';
+  const descMap = {
+    locate: 'Click the prompted country directly on the interactive globe map.',
+    type: 'Type as many countries as you can remember. Give up anytime to reveal missed countries in red.',
+    blitz: 'Race the clock and type as many countries as possible before time runs out. Global leaderboards active for preset times.',
+  };
+  const descEl = document.getElementById('mode-description-text');
+  if (descEl) descEl.textContent = descMap[mechanic] || '';
+
   renderQuizCatalog();
-});
+}
+
+on('btn-mode-locate', 'click', () => setQuizMechanic('locate'));
+on('btn-mode-type', 'click', () => setQuizMechanic('type'));
+on('btn-mode-blitz', 'click', () => setQuizMechanic('blitz'));
 
 // ================= STANDALONE LEADERBOARD MODAL =================
 function openStandaloneLeaderboard(quizConfig) {
   state.standaloneLbQuizConfig = quizConfig;
-  const modeLabel = quizConfig.mechanic === 'type' ? 'NAME ALL COUNTRIES' : 'LOCATE ON MAP';
+  const modeLabel =
+    quizConfig.mechanic === 'blitz'
+      ? 'TIMED BLITZ'
+      : quizConfig.mechanic === 'type'
+      ? 'NAME ALL COUNTRIES'
+      : 'LOCATE ON MAP';
   document.getElementById('standalone-lb-mode').textContent = `GLOBAL TOP 10 // ${modeLabel}`;
   document.getElementById('standalone-lb-title').textContent = quizConfig.shortTitle;
   document.getElementById('standalone-lb-modal')?.classList.remove('hidden');
@@ -1632,7 +1662,7 @@ function updateLabelsAndMarkersVisibility() {
       tier >= 3;
 
     if (isQuiz) {
-      if (state.quiz.mechanic !== 'type' && !state.quiz.finished) return 'none';
+      if (state.quiz.mechanic !== 'type' && state.quiz.mechanic !== 'blitz' && !state.quiz.finished) return 'none';
       if (!state.quiz.config.targetCountryIds.includes(c.id)) return 'none';
       const isNamedOrMissed =
         state.quiz.completedIds.has(c.id) || state.quiz.missedIds.has(c.id);
@@ -1657,6 +1687,11 @@ function getRecordLabelHtml(quizId, mechanic) {
   const records = loadQuizRecords();
   const rec = records[`${quizId}_${mechanic}`];
   if (!rec) return `<span>NO RECORD</span>`;
+  if (mechanic === 'blitz') {
+    return rec.fullCompletion
+      ? `<span class="best-record-pill">★ BEST: ${rec.accuracy} IN ${formatTime(rec.time)}</span>`
+      : `<span class="best-record-pill">★ BEST: ${rec.accuracy} COUNTRIES</span>`;
+  }
   return `<span class="best-record-pill">★ BEST: ${rec.accuracy}% IN ${formatTime(rec.time)}</span>`;
 }
 
@@ -1691,7 +1726,105 @@ function createQuizTileElement(code, modeBadge, title, desc, countLabel, quizCon
   return tile;
 }
 
+function getCustomBlitzSeconds() {
+  const mins = parseInt(document.getElementById('custom-blitz-min')?.value || '0', 10) || 0;
+  const secs = parseInt(document.getElementById('custom-blitz-sec')?.value || '0', 10) || 0;
+  return mins * 60 + secs;
+}
+
+function updateCustomBlitzPersonalBest() {
+  const pbEl = document.getElementById('custom-blitz-pb');
+  if (!pbEl) return;
+  const totalSeconds = getCustomBlitzSeconds();
+  if (totalSeconds < 10 || totalSeconds > 3600) {
+    pbEl.textContent = 'ENTER A TIME BETWEEN 00:10 AND 60:00';
+    return;
+  }
+  const records = loadQuizRecords();
+  const rec = records[`blitz-custom-${totalSeconds}_blitz`];
+  const label = formatBlitzDurationLabel(totalSeconds);
+  pbEl.textContent = rec
+    ? `★ YOUR PERSONAL BEST (${label}): ${rec.accuracy} COUNTRIES`
+    : `NO LOCAL RECORD YET FOR ${label}`;
+}
+
+function renderBlitzCatalog() {
+  const presetGrid = document.getElementById('blitz-preset-grid');
+  if (!presetGrid) return;
+  presetGrid.innerHTML = '';
+
+  const allTargetIds = getQuizTargetCountries('all').map((c) => c.id);
+
+  BLITZ_PRESETS.forEach((preset) => {
+    const quizConfig = {
+      id: `blitz-${preset.seconds}`,
+      mechanic: 'blitz',
+      timeLimitSeconds: preset.seconds,
+      allowLeaderboard: true,
+      title: `${preset.shortTitle} // SPEEDRUN`,
+      shortTitle: preset.shortTitle,
+      targetCountryIds: allTargetIds,
+      view: CONTINENT_VIEWS.all,
+    };
+
+    presetGrid.appendChild(
+      createQuizTileElement(
+        preset.code,
+        formatTime(preset.seconds),
+        preset.title,
+        preset.desc,
+        'WORLD BLITZ',
+        quizConfig
+      )
+    );
+  });
+
+  updateCustomBlitzPersonalBest();
+}
+
+on('custom-blitz-min', 'input', updateCustomBlitzPersonalBest);
+on('custom-blitz-sec', 'input', updateCustomBlitzPersonalBest);
+
+on('btn-start-custom-blitz', 'click', () => {
+  const errEl = document.getElementById('custom-blitz-error');
+  const totalSeconds = getCustomBlitzSeconds();
+
+  if (totalSeconds < 10 || totalSeconds > 3600) {
+    if (errEl) errEl.textContent = 'TIME MUST BE BETWEEN 10 SECONDS AND 60 MINUTES.';
+    return;
+  }
+  if (errEl) errEl.textContent = '';
+
+  const durLabel = formatBlitzDurationLabel(totalSeconds);
+  const allTargetIds = getQuizTargetCountries('all').map((c) => c.id);
+
+  startQuiz({
+    id: `blitz-custom-${totalSeconds}`,
+    mechanic: 'blitz',
+    timeLimitSeconds: totalSeconds,
+    allowLeaderboard: false,
+    title: `CUSTOM BLITZ // ${durLabel}`,
+    shortTitle: `CUSTOM BLITZ (${durLabel})`,
+    targetCountryIds: allTargetIds,
+    view: CONTINENT_VIEWS.all,
+  });
+});
+
 function renderQuizCatalog() {
+  const isBlitz = state.selectedQuizMechanic === 'blitz';
+  const blitzSection = document.getElementById('blitz-catalog-section');
+  const standardSections = document.querySelectorAll(
+    '.quiz-catalog > .catalog-section:not(#blitz-catalog-section)'
+  );
+
+  blitzSection?.classList.toggle('hidden', !isBlitz);
+  standardSections.forEach((sec) => sec.classList.toggle('hidden', isBlitz));
+
+  if (isBlitz) {
+    renderBlitzCatalog();
+    return;
+  }
+
   const continentGrid = document.getElementById('continent-quiz-grid');
   const subregionGrid = document.getElementById('subregion-quiz-grid');
   const orgGrid = document.getElementById('org-quiz-grid');
@@ -1822,6 +1955,7 @@ function startQuiz(config) {
 
   state.mode = 'quiz';
   const mechanic = config.mechanic || 'locate';
+  const isTypingMode = mechanic === 'type' || mechanic === 'blitz';
   const shuffledIds = shuffleArray(config.targetCountryIds);
 
   state.quiz = {
@@ -1829,8 +1963,10 @@ function startQuiz(config) {
     finished: false,
     hasStarted: false,
     scoreSubmitted: false,
-    finalScorePct: 100,
+    finalScorePct: 0,
     mechanic,
+    timeLimitSeconds: config.timeLimitSeconds || 0,
+    allowLeaderboard: config.allowLeaderboard !== false,
     config,
     queue: shuffledIds,
     currentTarget: mechanic === 'locate' ? state.countryById.get(shuffledIds[0]) || null : null,
@@ -1859,7 +1995,12 @@ function startQuiz(config) {
   const typeBox = document.getElementById('quiz-type-box');
   const typeInput = document.getElementById('quiz-type-input');
 
-  if (mechanic === 'type') {
+  const giveUpBtn = document.getElementById('btn-give-up');
+  if (giveUpBtn) {
+    giveUpBtn.textContent = mechanic === 'blitz' ? 'END EARLY ⚑' : 'GIVE UP ⚑';
+  }
+
+  if (isTypingMode) {
     locateBox?.classList.add('hidden');
     typeBox?.classList.remove('hidden');
     if (typeInput) {
@@ -1881,7 +2022,11 @@ function startQuiz(config) {
 
   stopQuizTimer();
   const timerEl = document.getElementById('quiz-timer');
-  if (timerEl) timerEl.textContent = '00:00';
+  if (timerEl) {
+    timerEl.classList.remove('timer-urgent');
+    timerEl.textContent =
+      mechanic === 'blitz' ? formatTime(state.quiz.timeLimitSeconds) : '00:00';
+  }
 }
 
 function ensureTimerStarted() {
@@ -1895,11 +2040,53 @@ function ensureTimerStarted() {
 function startQuizTimer() {
   stopQuizTimer();
   const timerEl = document.getElementById('quiz-timer');
-  if (timerEl) timerEl.textContent = '00:00';
-  state.quiz.timerInterval = setInterval(() => {
-    if (!state.quiz.hasStarted || !state.quiz.startTime) return;
-    state.quiz.elapsedSeconds = Math.floor((Date.now() - state.quiz.startTime) / 1000);
-    if (timerEl) timerEl.textContent = formatTime(state.quiz.elapsedSeconds);
+  const q = state.quiz;
+
+  if (q.mechanic === 'blitz') {
+    if (timerEl) {
+      timerEl.classList.remove('timer-urgent');
+      timerEl.textContent = formatTime(q.timeLimitSeconds);
+    }
+
+    q.timerInterval = setInterval(() => {
+      if (!q.hasStarted || !q.startTime || !q.active) return;
+      const elapsedMs = Date.now() - q.startTime;
+      const remainingSeconds = Math.max(0, Math.ceil((q.timeLimitSeconds * 1000 - elapsedMs) / 1000));
+      q.elapsedSeconds = Math.min(q.timeLimitSeconds, Math.floor(elapsedMs / 1000));
+
+      if (timerEl) {
+        timerEl.textContent = formatTime(remainingSeconds);
+        timerEl.classList.toggle('timer-urgent', remainingSeconds <= 10 && remainingSeconds > 0);
+      }
+
+      const pctLeft = Math.max(0, ((q.timeLimitSeconds * 1000 - elapsedMs) / (q.timeLimitSeconds * 1000)) * 100);
+      const fill = document.getElementById('quiz-progress-fill');
+      if (fill) {
+        fill.style.width = `${pctLeft}%`;
+        fill.style.backgroundColor =
+          remainingSeconds <= 10
+            ? 'var(--quiz-wrong)'
+            : pctLeft <= 25
+            ? 'var(--quiz-skipped)'
+            : 'var(--quiz-correct)';
+      }
+
+      if (elapsedMs >= q.timeLimitSeconds * 1000) {
+        q.elapsedSeconds = q.timeLimitSeconds;
+        finishQuiz(false, true);
+      }
+    }, 200);
+    return;
+  }
+
+  if (timerEl) {
+    timerEl.classList.remove('timer-urgent');
+    timerEl.textContent = '00:00';
+  }
+  q.timerInterval = setInterval(() => {
+    if (!q.hasStarted || !q.startTime) return;
+    q.elapsedSeconds = Math.floor((Date.now() - q.startTime) / 1000);
+    if (timerEl) timerEl.textContent = formatTime(q.elapsedSeconds);
   }, 500);
 }
 
@@ -1908,6 +2095,7 @@ function stopQuizTimer() {
     clearInterval(state.quiz.timerInterval);
     state.quiz.timerInterval = null;
   }
+  document.getElementById('quiz-timer')?.classList.remove('timer-urgent');
 }
 
 function formatTime(totalSeconds) {
@@ -1919,8 +2107,24 @@ function formatTime(totalSeconds) {
 function updateQuizHUD() {
   const q = state.quiz;
   const doneCount = q.completedIds.size + q.skippedIds.size;
+  const fillEl = document.getElementById('quiz-progress-fill');
 
   document.getElementById('quiz-title-label').textContent = q.config.title;
+
+  if (q.mechanic === 'blitz') {
+    document.getElementById('quiz-progress-text').textContent = `${q.completedIds.size} NAMED`;
+    const rec = loadQuizRecords()[`${q.config.id}_blitz`];
+    document.getElementById('quiz-stat-label').textContent = 'BEST';
+    document.getElementById('quiz-accuracy').textContent = rec ? `${rec.accuracy}` : '—';
+
+    if (!q.hasStarted && fillEl) {
+      fillEl.style.width = '100%';
+      fillEl.style.backgroundColor = 'var(--quiz-correct)';
+    }
+    return;
+  }
+
+  if (fillEl) fillEl.style.backgroundColor = 'var(--quiz-correct)';
   document.getElementById('quiz-progress-text').textContent =
     `${q.completedIds.size} / ${q.totalCount} FOUND`;
 
@@ -1940,7 +2144,7 @@ function updateQuizHUD() {
   }
 
   const pct = q.totalCount > 0 ? (doneCount / q.totalCount) * 100 : 0;
-  document.getElementById('quiz-progress-fill').style.width = `${pct}%`;
+  if (fillEl) fillEl.style.width = `${pct}%`;
 }
 
 let feedbackTimeout = null;
@@ -2038,7 +2242,7 @@ const typeInputEl = document.getElementById('quiz-type-input');
 if (typeInputEl) {
   typeInputEl.addEventListener('input', () => {
     const q = state.quiz;
-    if (!q.active || q.mechanic !== 'type') return;
+    if (!q.active || (q.mechanic !== 'type' && q.mechanic !== 'blitz')) return;
 
     ensureTimerStarted();
 
@@ -2059,14 +2263,14 @@ if (typeInputEl) {
       q.completedIds.add(matchedCountry.id);
       q.correctClicks += 1;
       typeInputEl.value = '';
-      const isFinal = q.completedIds.size === q.totalCount; // <-- Add this line
-      audioEngine.playCorrect(isFinal);                     // <-- Add this line
+      const isFinal = q.completedIds.size === q.totalCount;
+      if (typeof audioEngine !== 'undefined') audioEngine.playCorrect(isFinal);
       showFeedbackToast(`✓ ${matchedCountry.name.toUpperCase()}`, '#10b981');
       updateQuizHUD();
       updateMapColorsAndVisibility();
 
-      if (q.completedIds.size === q.totalCount) {
-        finishQuiz(false);
+      if (isFinal) {
+        finishQuiz(false, false);
       }
     }
   });
@@ -2074,48 +2278,77 @@ if (typeInputEl) {
 
 on('btn-give-up', 'click', () => {
   const q = state.quiz;
-  if (!q.active || q.mechanic !== 'type') return;
+  if (!q.active || (q.mechanic !== 'type' && q.mechanic !== 'blitz')) return;
 
   ensureTimerStarted();
 
-  q.config.targetCountryIds.forEach((id) => {
-    if (!q.completedIds.has(id)) {
-      q.missedIds.add(id);
-    }
-  });
+  if (q.mechanic === 'type') {
+    q.config.targetCountryIds.forEach((id) => {
+      if (!q.completedIds.has(id)) {
+        q.missedIds.add(id);
+      }
+    });
+  }
 
-  finishQuiz(true);
+  finishQuiz(true, false);
 });
 
 // ================= FINISH QUIZ & LIVE LEADERBOARD INTEGRATION =================
-function finishQuiz(gaveUp = false) {
+function finishQuiz(gaveUp = false, timedOut = false) {
   stopQuizTimer();
   const q = state.quiz;
   q.active = false;
   q.finished = true;
-  q.elapsedSeconds = Math.max(1, Math.floor((Date.now() - q.startTime) / 1000));
+
+  if (q.mechanic === 'blitz' && timedOut) {
+    q.elapsedSeconds = q.timeLimitSeconds;
+  } else {
+    const rawElapsed = q.startTime ? Math.floor((Date.now() - q.startTime) / 1000) : 1;
+    q.elapsedSeconds = Math.max(1, q.timeLimitSeconds ? Math.min(q.timeLimitSeconds, rawElapsed) : rawElapsed);
+  }
 
   updateMapColorsAndVisibility();
 
   const missedBox = document.getElementById('missed-countries-container');
   const missedList = document.getElementById('missed-countries-list');
+  const resMistakesEl = document.getElementById('res-mistakes');
+  const resBox2Label = document.getElementById('res-box2-label');
 
-  document.getElementById('results-category-tag').textContent = gaveUp
-    ? 'CHALLENGE ENDED // GAVE UP'
+  document.getElementById('results-category-tag').textContent = timedOut
+    ? "TIME'S UP // BLITZ COMPLETE"
+    : gaveUp
+    ? q.mechanic === 'blitz'
+      ? 'BLITZ ENDED EARLY'
+      : 'CHALLENGE ENDED // GAVE UP'
     : 'CHALLENGE COMPLETE';
+
   document.getElementById('results-quiz-title').textContent = q.config.shortTitle;
   document.getElementById('res-found').textContent = `${q.completedIds.size} / ${q.totalCount}`;
   document.getElementById('res-time').textContent = formatTime(q.elapsedSeconds);
+  if (resBox2Label) resBox2Label.textContent = 'IDENTIFIED (GREEN)';
+  resMistakesEl?.classList.add('text-red');
 
-  let finalScorePct = 100;
+  let finalScoreValue = 100;
 
-  if (q.mechanic === 'type') {
-    finalScorePct =
+  if (q.mechanic === 'blitz') {
+    finalScoreValue = q.completedIds.size;
+    const pacePerMin = ((q.completedIds.size / Math.max(1, q.elapsedSeconds)) * 60).toFixed(1);
+
+    document.getElementById('res-box1-label').textContent = 'COUNTRIES NAMED';
+    document.getElementById('res-accuracy').textContent = String(q.completedIds.size);
+    if (resBox2Label) resBox2Label.textContent = 'WORLD COVERAGE';
+    document.getElementById('res-found').textContent = `${q.completedIds.size} / ${q.totalCount}`;
+    document.getElementById('res-box4-label').textContent = 'BLITZ PACE';
+    resMistakesEl?.classList.remove('text-red');
+    if (resMistakesEl) resMistakesEl.textContent = `${pacePerMin}/MIN`;
+    if (missedBox) missedBox.classList.add('hidden');
+  } else if (q.mechanic === 'type') {
+    finalScoreValue =
       q.totalCount > 0 ? Math.round((q.completedIds.size / q.totalCount) * 100) : 100;
     document.getElementById('res-box1-label').textContent = 'RECALL SCORE';
-    document.getElementById('res-accuracy').textContent = `${finalScorePct}%`;
+    document.getElementById('res-accuracy').textContent = `${finalScoreValue}%`;
     document.getElementById('res-box4-label').textContent = 'MISSED (RED)';
-    document.getElementById('res-mistakes').textContent = String(q.missedIds.size);
+    if (resMistakesEl) resMistakesEl.textContent = String(q.missedIds.size);
 
     if (q.missedIds.size > 0 && missedBox && missedList) {
       missedList.innerHTML = '';
@@ -2141,43 +2374,63 @@ function finishQuiz(gaveUp = false) {
     }
   } else {
     const totalAttempts = q.correctClicks + q.mistakes;
-    finalScorePct =
+    finalScoreValue =
       totalAttempts === 0 ? 100 : Math.round((q.correctClicks / totalAttempts) * 100);
     document.getElementById('res-box1-label').textContent = 'FINAL ACCURACY';
-    document.getElementById('res-accuracy').textContent = `${finalScorePct}%`;
+    document.getElementById('res-accuracy').textContent = `${finalScoreValue}%`;
     document.getElementById('res-box4-label').textContent = 'WRONG / SKIPPED';
-    document.getElementById('res-mistakes').textContent = String(q.mistakes);
+    if (resMistakesEl) resMistakesEl.textContent = String(q.mistakes);
     if (missedBox) missedBox.classList.add('hidden');
   }
 
-  q.finalScorePct = finalScorePct;
+  q.finalScorePct = finalScoreValue;
 
   const recordKey = `${q.config.id}_${q.mechanic}`;
   const isFullCompletion = q.completedIds.size === q.totalCount;
   const bestRecord = saveQuizRecord(
     recordKey,
-    finalScorePct,
+    finalScoreValue,
     q.elapsedSeconds,
     isFullCompletion
   );
 
   const bestBanner = document.getElementById('personal-best-banner');
   if (bestBanner && bestRecord) {
-    bestBanner.textContent = `★ YOUR PERSONAL BEST: ${bestRecord.accuracy}% IN ${formatTime(bestRecord.time)}`;
+    bestBanner.textContent =
+      q.mechanic === 'blitz'
+        ? `★ YOUR PERSONAL BEST: ${bestRecord.accuracy} COUNTRIES (${formatTime(bestRecord.time)})`
+        : `★ YOUR PERSONAL BEST: ${bestRecord.accuracy}% IN ${formatTime(bestRecord.time)}`;
   }
 
-  const nameInput = document.getElementById('lb-player-name');
-  if (nameInput) nameInput.value = loadSavedPlayerName();
+  // Toggle global leaderboard visibility (disabled for Custom Blitz)
+  const allowLb = q.allowLeaderboard !== false;
+  const lbSubmitBox = document.getElementById('lb-submit-section');
+  const lbTableSection = document.getElementById('results-lb-section');
+  const noLbNote = document.getElementById('blitz-no-lb-note');
 
-  const submitBtn = document.getElementById('btn-submit-lb');
-  const statusEl = document.getElementById('lb-submit-status');
-  if (submitBtn) {
-    submitBtn.disabled = false;
-    submitBtn.textContent = 'POST SCORE ↗';
+  lbSubmitBox?.classList.toggle('hidden', !allowLb);
+  lbTableSection?.classList.toggle('hidden', !allowLb);
+  noLbNote?.classList.toggle('hidden', allowLb);
+
+  if (allowLb) {
+    const nameInput = document.getElementById('lb-player-name');
+    if (nameInput) nameInput.value = loadSavedPlayerName();
+
+    const submitBtn = document.getElementById('btn-submit-lb');
+    const statusEl = document.getElementById('lb-submit-status');
+    const isZeroBlitz = q.mechanic === 'blitz' && q.completedIds.size === 0;
+
+    if (submitBtn) {
+      submitBtn.disabled = isZeroBlitz;
+      submitBtn.textContent = 'POST SCORE ↗';
+    }
+    if (statusEl) {
+      statusEl.style.color = 'var(--ink-muted)';
+      statusEl.textContent = isZeroBlitz ? 'NAME AT LEAST 1 COUNTRY TO POST A SCORE.' : '';
+    }
+
+    fetchGlobalLeaderboard(recordKey, document.getElementById('results-lb-list'));
   }
-  if (statusEl) statusEl.textContent = '';
-
-  fetchGlobalLeaderboard(recordKey, document.getElementById('results-lb-list'));
 
   renderQuizCatalog();
   document.getElementById('quiz-results-modal')?.classList.remove('hidden');
@@ -2185,7 +2438,8 @@ function finishQuiz(gaveUp = false) {
 
 on('btn-submit-lb', 'click', async () => {
   const q = state.quiz;
-  if (!q.config || q.scoreSubmitted) return;
+  if (!q.config || q.scoreSubmitted || q.allowLeaderboard === false) return;
+  if (q.mechanic === 'blitz' && q.completedIds.size === 0) return;
 
   const nameInput = document.getElementById('lb-player-name');
   const submitBtn = document.getElementById('btn-submit-lb');
