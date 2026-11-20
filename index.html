@@ -230,6 +230,46 @@
           <button class="mode-btn" id="btn-mode-type" data-mode="type">
             02 // NAME ALL COUNTRIES
           </button>
+          <button class="mode-btn" id="btn-mode-blitz" data-mode="blitz">
+            03 // TIMED BLITZ
+          </button>
+        </div>
+      </div>
+
+      <!-- Timed Blitz View (Visible only when 03 // TIMED BLITZ is active) -->
+      <div class="catalog-section hidden" id="blitz-catalog-section">
+        <div class="section-meta">
+          <span class="mono-tag">SPEED CHALLENGE // ALL 195 SOVEREIGN STATES</span>
+          <h2 class="section-heading">TIMED BLITZ ARENA</h2>
+        </div>
+
+        <div class="quiz-grid" id="blitz-preset-grid"></div>
+
+        <div class="custom-blitz-card">
+          <div class="custom-blitz-info">
+            <span class="mono-tag">CUSTOM TIMER // LOCAL PERSONAL BEST ONLY</span>
+            <h3 class="quiz-tile-title" style="margin-top: 6px;">Custom Time Blitz</h3>
+            <p class="quiz-tile-desc">
+              Set any timeframe from 10 seconds to 60 minutes. Tracks your local personal best only (excluded from global leaderboards).
+            </p>
+            <div class="custom-blitz-pb" id="custom-blitz-pb">NO RECORD FOR THIS TIME</div>
+          </div>
+
+          <div class="custom-blitz-controls">
+            <div class="custom-time-inputs">
+              <label class="time-field">
+                <span class="mono-tag">MIN</span>
+                <input type="number" id="custom-blitz-min" min="0" max="60" value="4" />
+              </label>
+              <span class="time-colon">:</span>
+              <label class="time-field">
+                <span class="mono-tag">SEC</span>
+                <input type="number" id="custom-blitz-sec" min="0" max="59" value="0" />
+              </label>
+            </div>
+            <button class="hud-btn active" id="btn-start-custom-blitz">Launch Custom Blitz ↗</button>
+            <span class="mono-tag custom-blitz-err" id="custom-blitz-error"></span>
+          </div>
         </div>
       </div>
 
@@ -481,7 +521,7 @@
             <strong class="res-big" id="res-accuracy">100%</strong>
           </div>
           <div class="res-box">
-            <span class="info-label">IDENTIFIED (GREEN)</span>
+            <span class="info-label" id="res-box2-label">IDENTIFIED (GREEN)</span>
             <strong class="res-big text-green" id="res-found">0 / 0</strong>
           </div>
           <div class="res-box">
@@ -496,6 +536,11 @@
 
         <div id="personal-best-banner" class="best-banner">
           PERSONAL BEST: —
+        </div>
+
+        <!-- Shown instead of leaderboard for Custom Blitz runs -->
+        <div id="blitz-no-lb-note" class="best-banner hidden" style="color: var(--ink-muted);">
+          CUSTOM TIME // PERSONAL BEST SAVED LOCALLY (GLOBAL LEADERBOARD DISABLED)
         </div>
 
         <!-- Submit Score to Global Leaderboard Box -->
@@ -515,7 +560,7 @@
         </div>
 
         <!-- Global Top 10 Table -->
-        <div class="lb-section">
+        <div id="results-lb-section" class="lb-section">
           <div class="lb-header-row">
             <span class="info-label">GLOBAL TOP 10 // LIVE RANKINGS</span>
             <button class="lb-refresh-btn" id="btn-refresh-lb">↻ Refresh</button>
